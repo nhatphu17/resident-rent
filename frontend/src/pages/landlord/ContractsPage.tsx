@@ -120,6 +120,7 @@ export default function ContractsPage() {
       });
       fetchContracts();
       fetchRooms(); // Refresh to update room status
+      fetchTenants(); // Refresh tenants list to show newly assigned tenant
     } catch (err: any) {
       setError(err.response?.data?.message || 'Lỗi khi lưu hợp đồng');
     }

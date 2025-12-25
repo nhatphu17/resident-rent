@@ -9,7 +9,7 @@ import { UserRole } from '@prisma/client';
 export class TenantsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createTenantDto: CreateTenantDto) {
+  async create(createTenantDto: CreateTenantDto, createdByLandlordId?: number) {
     const { email, name, phone, address } = createTenantDto;
 
     // Check if user with this email already exists
@@ -42,6 +42,7 @@ export class TenantsService {
         name,
         phone,
         address,
+        createdByLandlordId: createdByLandlordId || null,
       },
       include: {
         user: {
@@ -75,7 +76,9 @@ export class TenantsService {
   }
 
   async findAllByLandlord(landlordId: number) {
-    // Get all tenants that have contracts with this landlord's rooms (including expired/terminated)
+    // Get all tenants that:
+    // 1. Have contracts with this landlord's rooms, OR
+    // 2. Were created by this landlord (even if no contract yet)
     const contracts = await this.prisma.contract.findMany({
       where: {
         landlordId,
@@ -86,16 +89,31 @@ export class TenantsService {
       distinct: ['tenantId'],
     });
 
-    const tenantIds = contracts.map((c) => c.tenantId);
+    const tenantIdsFromContracts = contracts.map((c) => c.tenantId);
 
-    if (tenantIds.length === 0) {
+    // Get tenants created by this landlord
+    const tenantsCreatedByLandlord = await this.prisma.tenant.findMany({
+      where: {
+        createdByLandlordId: landlordId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const tenantIdsCreated = tenantsCreatedByLandlord.map((t) => t.id);
+
+    // Combine both lists
+    const allTenantIds = [...new Set([...tenantIdsFromContracts, ...tenantIdsCreated])];
+
+    if (allTenantIds.length === 0) {
       return [];
     }
 
     return this.prisma.tenant.findMany({
       where: {
         id: {
-          in: tenantIds,
+          in: allTenantIds,
         },
       },
       include: {

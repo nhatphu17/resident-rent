@@ -28,8 +28,20 @@ export class TenantsController {
 
   @Post()
   @Roles(UserRole.LANDLORD)
-  create(@Body() createTenantDto: CreateTenantDto) {
-    return this.tenantsService.create(createTenantDto);
+  async create(
+    @Body() createTenantDto: CreateTenantDto,
+    @CurrentUser() user: any,
+  ) {
+    // Get landlord ID to track who created this tenant
+    const landlord = await this.prisma.landlord.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!landlord) {
+      throw new Error('Landlord not found');
+    }
+
+    return this.tenantsService.create(createTenantDto, landlord.id);
   }
 
   @Get()
