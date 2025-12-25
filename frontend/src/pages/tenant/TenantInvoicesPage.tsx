@@ -1,0 +1,130 @@
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface Invoice {
+  id: number;
+  month: number;
+  year: number;
+  totalAmount: number;
+  status: 'PENDING' | 'PAID' | 'OVERDUE';
+  dueDate: string;
+  room: { roomNumber: string };
+  roomPrice: number;
+  electricUsage: number;
+  electricTotal: number;
+  waterUsage: number;
+  waterTotal: number;
+}
+
+export default function TenantInvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      const response = await api.get('/invoices');
+      setInvoices(response.data);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = (invoiceId: number) => {
+    window.open(`/api/pdf/invoice/${invoiceId}`, '_blank');
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return 'text-green-600';
+      case 'OVERDUE':
+        return 'text-red-600';
+      default:
+        return 'text-yellow-600';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return 'Đã thanh toán';
+      case 'OVERDUE':
+        return 'Quá hạn';
+      default:
+        return 'Chờ thanh toán';
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <div className="px-4 py-6">
+      <h2 className="text-2xl font-bold mb-6">Hóa đơn của tôi</h2>
+      <div className="space-y-4">
+        {invoices.map((invoice) => (
+          <Card key={invoice.id}>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>
+                  Hóa đơn tháng {invoice.month}/{invoice.year} - Phòng {invoice.room.roomNumber}
+                </CardTitle>
+                <span className={`font-semibold ${getStatusColor(invoice.status)}`}>
+                  {getStatusText(invoice.status)}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Tiền phòng:</p>
+                    <p className="font-semibold">{Number(invoice.roomPrice).toLocaleString('vi-VN')} VNĐ</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Điện ({Number(invoice.electricUsage).toFixed(2)} kWh):</p>
+                    <p className="font-semibold">{Number(invoice.electricTotal).toLocaleString('vi-VN')} VNĐ</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Nước ({Number(invoice.waterUsage).toFixed(2)} m³):</p>
+                    <p className="font-semibold">{Number(invoice.waterTotal).toLocaleString('vi-VN')} VNĐ</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Tổng cộng:</p>
+                    <p className="text-lg font-bold">{Number(invoice.totalAmount).toLocaleString('vi-VN')} VNĐ</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-4">
+                  Hạn thanh toán: {new Date(invoice.dueDate).toLocaleDateString('vi-VN')}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => handleDownloadPdf(invoice.id)}
+                  className="mt-4"
+                >
+                  Tải hóa đơn PDF
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {invoices.length === 0 && (
+          <Card>
+            <CardContent className="py-6 text-center text-gray-500">
+              Chưa có hóa đơn nào
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+

@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  LANDLORD
+  TENANT
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      UserRole
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  landlord Landlord?
+  tenant   Tenant?
+
+  @@map("users")
+}
+
+model Landlord {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  name      String
+  phone     String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rooms    Room[]
+  contracts Contract[]
+
+  @@map("landlords")
+}
+
+model Tenant {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  name      String
+  phone     String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+  invoices  Invoice[]
+
+  @@map("tenants")
+}
+
+model Room {
+  id            Int      @id @default(autoincrement())
+  landlordId    Int
+  roomNumber    String
+  floor         Int?
+  area          Float?
+  price         Decimal  @db.Decimal(10, 2)
+  electricPrice Decimal  @db.Decimal(10, 2) @default(3500)
+  waterPrice    Decimal  @db.Decimal(10, 2) @default(25000)
+  status        String   @default("available") // available, occupied, maintenance
+  description   String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  landlord     Landlord    @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  contracts    Contract[]
+  usages       Usage[]
+  sensorData   SensorData[]
+  invoices     Invoice[]
+
+  @@unique([landlordId, roomNumber])
+  @@map("rooms")
+}
+
+model Contract {
+  id          Int       @id @default(autoincrement())
+  landlordId  Int
+  tenantId    Int
+  roomId      Int
+  startDate   DateTime
+  endDate     DateTime?
+  monthlyRent Decimal   @db.Decimal(10, 2)
+  deposit     Decimal?  @db.Decimal(10, 2)
+  status      String    @default("active") // active, expired, terminated
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  landlord Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+
+  @@map("contracts")
+}
+
+model Usage {
+  id            Int      @id @default(autoincrement())
+  roomId        Int
+  month         Int      // 1-12
+  year          Int
+  electricStart Decimal? @db.Decimal(10, 2)
+  electricEnd   Decimal  @db.Decimal(10, 2)
+  waterStart    Decimal? @db.Decimal(10, 2)
+  waterEnd      Decimal  @db.Decimal(10, 2)
+  electricUsage Decimal  @db.Decimal(10, 2) @default(0)
+  waterUsage    Decimal  @db.Decimal(10, 2) @default(0)
+  isAuto        Boolean  @default(false) // true if from IoT sensor
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  room    Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  invoice Invoice?
+
+  @@unique([roomId, month, year])
+  @@map("usages")
+}
+
+model SensorData {
+  id          Int      @id @default(autoincrement())
+  roomId      Int
+  electricity Decimal  @db.Decimal(10, 2)
+  water       Decimal  @db.Decimal(10, 2)
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("sensor_data")
+}
+
+model Invoice {
+  id            Int          @id @default(autoincrement())
+  contractId    Int
+  tenantId      Int
+  roomId        Int
+  usageId       Int?         @unique
+  month         Int
+  year          Int
+  roomPrice     Decimal      @db.Decimal(10, 2)
+  electricUsage Decimal      @db.Decimal(10, 2) @default(0)
+  electricPrice Decimal      @db.Decimal(10, 2)
+  electricTotal Decimal      @db.Decimal(10, 2) @default(0)
+  waterUsage    Decimal      @db.Decimal(10, 2) @default(0)
+  waterPrice    Decimal      @db.Decimal(10, 2)
+  waterTotal    Decimal      @db.Decimal(10, 2) @default(0)
+  totalAmount   Decimal      @db.Decimal(10, 2)
+  status        InvoiceStatus @default(PENDING)
+  dueDate       DateTime
+  paidDate      DateTime?
+  notes         String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  usage    Usage?   @relation(fields: [usageId], references: [id])
+
+  @@unique([contractId, month, year])
+  @@map("invoices")
+}
+
+
