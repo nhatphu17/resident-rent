@@ -56,7 +56,7 @@ export default function RoomDetailPage() {
   
   // Build full address
   const fullAddress = room
-    ? [room.ward, room.district, room.province].filter(Boolean).join(', ')
+    ? [room.ward, room.province].filter(Boolean).join(', ')
     : room?.landlord.address || '';
 
   const copyPhone = () => {

@@ -49,7 +49,7 @@ export default function HomePage() {
 
   const filteredRooms = rooms.filter((room) => {
     const searchLower = searchTerm.toLowerCase();
-    const fullAddress = [room.ward, room.district, room.province, room.landlord.address]
+    const fullAddress = [room.ward, room.province, room.landlord.address]
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
@@ -148,7 +148,7 @@ export default function HomePage() {
                     Phòng {room.roomNumber}
                   </h3>
                   {(() => {
-                    const fullAddress = [room.ward, room.district, room.province]
+                    const fullAddress = [room.ward, room.province]
                       .filter(Boolean)
                       .join(', ');
                     return fullAddress || room.landlord.address ? (

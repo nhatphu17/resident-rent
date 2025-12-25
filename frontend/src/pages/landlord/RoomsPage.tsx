@@ -84,7 +84,6 @@ export default function RoomsPage() {
         electricPrice: Number(formData.electricPrice),
         waterPrice: Number(formData.waterPrice),
         ward: formData.ward || undefined,
-        district: formData.district || undefined,
         province: formData.province || undefined,
         qrCodeImage: formData.qrCodeImage || undefined,
       };
@@ -108,7 +107,6 @@ export default function RoomsPage() {
         status: 'available',
         description: '',
         ward: '',
-        district: '',
         province: '',
         qrCodeImage: '',
       });
@@ -130,7 +128,6 @@ export default function RoomsPage() {
       status: room.status,
       description: room.description || '',
       ward: room.ward || '',
-      district: room.district || '',
       province: room.province || '',
       qrCodeImage: room.qrCodeImage || '',
     });
@@ -154,20 +151,19 @@ export default function RoomsPage() {
     setShowForm(false);
     setEditingRoom(null);
     setQrPreview('');
-    setFormData({
-      roomNumber: '',
-      floor: '',
-      area: '',
-      price: '',
-      electricPrice: '3500',
-      waterPrice: '25000',
-      status: 'available',
-      description: '',
-      ward: '',
-      district: '',
-      province: '',
-      qrCodeImage: '',
-    });
+      setFormData({
+        roomNumber: '',
+        floor: '',
+        area: '',
+        price: '',
+        electricPrice: '3500',
+        waterPrice: '25000',
+        status: 'available',
+        description: '',
+        ward: '',
+        province: '',
+        qrCodeImage: '',
+      });
   };
 
   if (loading) return <div>Loading...</div>;
@@ -274,14 +270,6 @@ export default function RoomsPage() {
                     value={formData.ward}
                     onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
                     placeholder="VD: Phường 1, Xã An Phú..."
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label>Quận/Huyện</Label>
-                  <Input
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="VD: Quận 1, Huyện Bình Chánh..."
                   />
                 </div>
                 <div className="col-span-2">
