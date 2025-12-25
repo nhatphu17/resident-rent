@@ -3,14 +3,15 @@ import api from '@/lib/api';
 
 interface User {
   id: number;
-  email: string;
+  email?: string;
+  phone?: string;
   role: 'LANDLORD' | 'TENANT';
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (phoneOrEmail: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: 'LANDLORD' | 'TENANT', name: string, phone?: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
@@ -34,8 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
+  const login = async (phone: string, password: string) => {
+    const response = await api.post('/auth/login', { phone, password });
     const { access_token, user: userData } = response.data;
     
     setToken(access_token);
@@ -44,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const register = async (email: string, password: string, role: 'LANDLORD' | 'TENANT', name: string, phone?: string) => {
-    const response = await api.post('/auth/register', { email, password, role, name, phone });
+  const register = async (phone: string, password: string, role: 'LANDLORD' | 'TENANT', name: string) => {
+    const response = await api.post('/auth/register', { phone, password, role, name });
     const { access_token, user: userData } = response.data;
     
     setToken(access_token);

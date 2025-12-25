@@ -20,14 +20,24 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('api/rooms')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class RoomsController {
   constructor(
     private readonly roomsService: RoomsService,
     private prisma: PrismaService,
   ) {}
 
+  @Get('public')
+  async findAvailableRooms() {
+    return this.roomsService.findAvailableRooms();
+  }
+
+  @Get('public/:id')
+  async findOnePublic(@Param('id') id: string) {
+    return this.roomsService.findOnePublic(+id);
+  }
+
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LANDLORD)
   async create(
     @Body() createRoomDto: CreateRoomDto,
@@ -40,6 +50,7 @@ export class RoomsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LANDLORD, UserRole.TENANT)
   async findAll(@CurrentUser() user: any) {
     let landlordId: number | undefined;
@@ -53,6 +64,7 @@ export class RoomsController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LANDLORD, UserRole.TENANT)
   async findOne(
     @Param('id') id: string,
@@ -69,6 +81,7 @@ export class RoomsController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LANDLORD)
   async update(
     @Param('id') id: string,
@@ -82,6 +95,7 @@ export class RoomsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LANDLORD)
   async remove(
     @Param('id') id: string,

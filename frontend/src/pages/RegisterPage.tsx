@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -24,7 +23,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, password, role, name, phone);
+      await register(phone, password, role, name);
       navigate(role === 'LANDLORD' ? '/landlord' : '/tenant');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Đăng ký thất bại');
@@ -34,16 +33,16 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Đăng ký</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50/50 px-4 py-8">
+      <Card className="w-full max-w-md border-primary/20 shadow-xl">
+        <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
+          <CardTitle className="text-2xl text-primary">Đăng ký</CardTitle>
           <CardDescription>Tạo tài khoản mới để sử dụng hệ thống</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
                 {error}
               </div>
             )}
@@ -60,7 +59,7 @@ export default function RegisterPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Họ tên</Label>
+              <Label htmlFor="name">Họ tên *</Label>
               <Input
                 id="name"
                 type="text"
@@ -68,31 +67,26 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                className="w-full"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Số điện thoại</Label>
+              <Label htmlFor="phone">Số điện thoại * (Dùng để đăng nhập)</Label>
               <Input
                 id="phone"
                 type="tel"
                 placeholder="0901234567"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                required
+                className="w-full"
               />
+              <p className="text-xs text-muted-foreground">
+                Số điện thoại sẽ được dùng làm tài khoản đăng nhập
+              </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mật khẩu</Label>
+              <Label htmlFor="password">Mật khẩu *</Label>
               <Input
                 id="password"
                 type="password"
@@ -100,14 +94,16 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="w-full"
               />
+              <p className="text-xs text-muted-foreground">Tối thiểu 6 ký tự</p>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
               {loading ? 'Đang đăng ký...' : 'Đăng ký'}
             </Button>
             <div className="text-center text-sm">
               <span className="text-gray-600">Đã có tài khoản? </span>
-              <Link to="/login" className="text-primary hover:underline">
+              <Link to="/login" className="text-primary hover:underline font-medium">
                 Đăng nhập
               </Link>
             </div>

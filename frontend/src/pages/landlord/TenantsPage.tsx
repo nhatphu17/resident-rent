@@ -11,7 +11,8 @@ interface Tenant {
   phone: string;
   address?: string;
   user: {
-    email: string;
+    phone: string;
+    email?: string;
   };
   contracts?: Array<{
     id: number;
@@ -24,26 +25,52 @@ interface Tenant {
   }>;
 }
 
+interface Room {
+  id: number;
+  roomNumber: string;
+  floor?: number;
+  price: number;
+  status: string;
+}
+
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [formData, setFormData] = useState({
-    email: '',
     name: '',
     phone: '',
     address: '',
+    roomId: '',
+    startDate: '',
+    endDate: '',
+    monthlyRent: '',
+    deposit: '',
+    notes: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newTenantPassword, setNewTenantPassword] = useState('');
-  const [newTenantEmail, setNewTenantEmail] = useState('');
+  const [newTenantPhone, setNewTenantPhone] = useState('');
+  const [newTenantRoom, setNewTenantRoom] = useState('');
 
   useEffect(() => {
     fetchTenants();
+    fetchRooms();
   }, []);
+
+  const fetchRooms = async () => {
+    try {
+      const response = await api.get('/rooms');
+      const availableRooms = response.data.filter((room: Room) => room.status === 'available');
+      setRooms(availableRooms);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+    }
+  };
 
   const fetchTenants = async () => {
     try {
@@ -72,23 +99,49 @@ export default function TenantsPage() {
         setShowForm(false);
         setEditingTenant(null);
         setFormData({
-          email: '',
           name: '',
           phone: '',
           address: '',
+          roomId: '',
+          startDate: '',
+          endDate: '',
+          monthlyRent: '',
+          deposit: '',
+          notes: '',
         });
       } else {
-        const response = await api.post('/tenants', formData);
+        const data = {
+          name: formData.name,
+          phone: formData.phone,
+          address: formData.address || undefined,
+          roomId: Number(formData.roomId),
+          startDate: formData.startDate,
+          endDate: formData.endDate || undefined,
+          monthlyRent: Number(formData.monthlyRent),
+          deposit: formData.deposit ? Number(formData.deposit) : undefined,
+          notes: formData.notes || undefined,
+        };
+
+        const response = await api.post('/tenants', data);
         setNewTenantPassword(response.data.tempPassword);
-        setNewTenantEmail(formData.email);
+        setNewTenantPhone(formData.phone);
+        const selectedRoom = rooms.find((r) => r.id === Number(formData.roomId));
+        setNewTenantRoom(selectedRoom ? `Phòng ${selectedRoom.roomNumber}` : '');
         setShowPasswordModal(true);
         setShowForm(false);
         setFormData({
-          email: '',
           name: '',
           phone: '',
           address: '',
+          roomId: '',
+          startDate: '',
+          endDate: '',
+          monthlyRent: '',
+          deposit: '',
+          notes: '',
         });
+        fetchTenants();
+        fetchRooms(); // Refresh rooms to update status
       }
       fetchTenants();
     } catch (err: any) {
@@ -99,10 +152,15 @@ export default function TenantsPage() {
   const handleEdit = (tenant: Tenant) => {
     setEditingTenant(tenant);
     setFormData({
-      email: tenant.user.email,
       name: tenant.name,
       phone: tenant.phone,
       address: tenant.address || '',
+      roomId: '',
+      startDate: '',
+      endDate: '',
+      monthlyRent: '',
+      deposit: '',
+      notes: '',
     });
     setShowForm(true);
   };
@@ -123,11 +181,24 @@ export default function TenantsPage() {
     setShowForm(false);
     setEditingTenant(null);
     setFormData({
-      email: '',
       name: '',
       phone: '',
       address: '',
+      roomId: '',
+      startDate: '',
+      endDate: '',
+      monthlyRent: '',
+      deposit: '',
+      notes: '',
     });
+  };
+
+  const handleRoomChange = (roomId: string) => {
+    setFormData({ ...formData, roomId });
+    const selectedRoom = rooms.find((r) => r.id === Number(roomId));
+    if (selectedRoom) {
+      setFormData({ ...formData, roomId, monthlyRent: selectedRoom.price.toString() });
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -163,65 +234,156 @@ export default function TenantsPage() {
                   {success}
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {!editingTenant && (
+              {!editingTenant && (
+                <>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+                    <p className="font-semibold mb-1">Thông tin người thuê và hợp đồng</p>
+                    <p>Hệ thống sẽ tự động tạo hợp đồng và gán phòng cho người thuê mới. Số điện thoại sẽ được dùng làm tài khoản đăng nhập.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Họ tên *</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="Nguyễn Văn A"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Số điện thoại * (Dùng để đăng nhập)</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="0901234567"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="address">Địa chỉ</Label>
+                      <Input
+                        id="address"
+                        type="text"
+                        placeholder="123 Đường ABC, Quận XYZ"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="font-semibold mb-4 text-primary">Thông tin hợp đồng</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="roomId">Phòng *</Label>
+                        <Select
+                          value={formData.roomId}
+                          onValueChange={handleRoomChange}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Chọn phòng" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {rooms.map((room) => (
+                              <SelectItem key={room.id} value={room.id.toString()}>
+                                Phòng {room.roomNumber} - {Number(room.price).toLocaleString('vi-VN')} VNĐ/tháng
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate">Ngày bắt đầu *</Label>
+                        <Input
+                          id="startDate"
+                          type="date"
+                          value={formData.startDate}
+                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endDate">Ngày kết thúc</Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={formData.endDate}
+                          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="monthlyRent">Giá thuê/tháng (VNĐ) *</Label>
+                        <Input
+                          id="monthlyRent"
+                          type="number"
+                          value={formData.monthlyRent}
+                          onChange={(e) => setFormData({ ...formData, monthlyRent: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="deposit">Tiền cọc (VNĐ)</Label>
+                        <Input
+                          id="deposit"
+                          type="number"
+                          value={formData.deposit}
+                          onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="notes">Ghi chú</Label>
+                        <Input
+                          id="notes"
+                          type="text"
+                          value={formData.notes}
+                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                          placeholder="Ghi chú về hợp đồng..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+              {editingTenant && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="name">Họ tên *</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="tenant@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      id="name"
+                      type="text"
+                      placeholder="Nguyễn Văn A"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
                     />
                   </div>
-                )}
-                {editingTenant && (
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="phone">Số điện thoại *</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      disabled
-                      className="bg-muted"
+                      id="phone"
+                      type="tel"
+                      placeholder="0901234567"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      required
                     />
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="name">Họ tên *</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Nguyễn Văn A"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="address">Địa chỉ</Label>
+                    <Input
+                      id="address"
+                      type="text"
+                      placeholder="123 Đường ABC, Quận XYZ"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Số điện thoại *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="0901234567"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Địa chỉ</Label>
-                  <Input
-                    id="address"
-                    type="text"
-                    placeholder="123 Đường ABC, Quận XYZ"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </div>
-              </div>
+              )}
               <div className="flex gap-2 pt-2">
                 <Button type="submit" className="bg-primary hover:bg-primary/90">
                   {editingTenant ? 'Cập nhật' : 'Tạo người thuê'}
@@ -247,9 +409,9 @@ export default function TenantsPage() {
                 <p className="text-sm font-medium text-blue-900 mb-2">Vui lòng lưu lại thông tin đăng nhập:</p>
                 <div className="space-y-2">
                   <div>
-                    <span className="text-sm font-semibold text-blue-800">Email:</span>
+                    <span className="text-sm font-semibold text-blue-800">Số điện thoại (Tài khoản đăng nhập):</span>
                     <p className="text-lg font-mono bg-white p-2 rounded border border-blue-300 text-blue-900">
-                      {newTenantEmail}
+                      {newTenantPhone}
                     </p>
                   </div>
                   <div>
@@ -258,16 +420,25 @@ export default function TenantsPage() {
                       {newTenantPassword}
                     </p>
                   </div>
+                  {newTenantRoom && (
+                    <div>
+                      <span className="text-sm font-semibold text-blue-800">Phòng đã được gán:</span>
+                      <p className="text-lg font-semibold bg-white p-2 rounded border border-blue-300 text-blue-900">
+                        {newTenantRoom}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-blue-700 mt-3 italic">
-                  * Người thuê nên đổi mật khẩu sau lần đăng nhập đầu tiên
+                  * Người thuê đăng nhập bằng số điện thoại và mật khẩu tạm thời. Nên đổi mật khẩu sau lần đăng nhập đầu tiên.
                 </p>
               </div>
               <Button
                 onClick={() => {
                   setShowPasswordModal(false);
                   setNewTenantPassword('');
-                  setNewTenantEmail('');
+                  setNewTenantPhone('');
+                  setNewTenantRoom('');
                 }}
                 className="w-full bg-primary hover:bg-primary/90"
               >
@@ -307,11 +478,13 @@ export default function TenantsPage() {
             <CardContent className="pt-4">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">Email:</span> {tenant.user.email}
+                  <span className="font-medium">SĐT (Tài khoản):</span> {tenant.phone}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">SĐT:</span> {tenant.phone}
-                </p>
+                {tenant.user.email && (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">Email:</span> {tenant.user.email}
+                  </p>
+                )}
                 {tenant.address && (
                   <p className="text-sm text-muted-foreground">
                     <span className="font-medium">Địa chỉ:</span> {tenant.address}

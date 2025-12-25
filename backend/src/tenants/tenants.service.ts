@@ -9,56 +9,110 @@ import { UserRole } from '@prisma/client';
 export class TenantsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createTenantDto: CreateTenantDto, createdByLandlordId?: number) {
-    const { email, name, phone, address } = createTenantDto;
+  async create(createTenantDto: CreateTenantDto, createdByLandlordId: number) {
+    const { name, phone, address, roomId, startDate, endDate, monthlyRent, deposit, notes } = createTenantDto;
 
-    // Check if user with this email already exists
+    // Check if user with this phone already exists
     const existingUser = await this.prisma.user.findUnique({
-      where: { email },
+      where: { phone },
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException('Số điện thoại đã được sử dụng');
+    }
+
+    // Verify room belongs to landlord
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+    });
+
+    if (!room || room.landlordId !== createdByLandlordId) {
+      throw new ConflictException('Phòng không thuộc về chủ trọ này');
+    }
+
+    // Check if room is available
+    if (room.status !== 'available') {
+      throw new ConflictException('Phòng không còn trống');
     }
 
     // Generate a temporary password (tenant can change it later)
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    // Create user first
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        role: UserRole.TENANT,
-        phone,
-      },
-    });
+    // Convert date strings to DateTime objects
+    const contractStartDate = new Date(startDate);
+    const contractEndDate = endDate ? new Date(endDate) : null;
 
-    // Create tenant profile
-    const tenant = await this.prisma.tenant.create({
-      data: {
-        userId: user.id,
-        name,
-        phone,
-        address,
-        createdByLandlordId: createdByLandlordId || null,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            phone: true,
+    // Create user, tenant, and contract in a transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create user first (using phone as identifier, no email)
+      const user = await tx.user.create({
+        data: {
+          phone,
+          password: hashedPassword,
+          role: UserRole.TENANT,
+          email: null, // No email for tenants
+        },
+      });
+
+      // Create tenant profile
+      const tenant = await tx.tenant.create({
+        data: {
+          userId: user.id,
+          name,
+          phone,
+          address,
+          createdByLandlordId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              phone: true,
+            },
           },
         },
-      },
+      });
+
+      // Create contract automatically
+      const contract = await tx.contract.create({
+        data: {
+          tenantId: tenant.id,
+          roomId,
+          startDate: contractStartDate,
+          endDate: contractEndDate,
+          monthlyRent,
+          deposit: deposit || null,
+          status: 'active',
+          notes: notes || null,
+          landlordId: createdByLandlordId,
+        },
+        include: {
+          room: {
+            select: {
+              id: true,
+              roomNumber: true,
+              floor: true,
+            },
+          },
+        },
+      });
+
+      // Update room status to occupied
+      await tx.room.update({
+        where: { id: roomId },
+        data: { status: 'occupied' },
+      });
+
+      return {
+        ...tenant,
+        contract,
+        tempPassword, // Return temp password so landlord can share it with tenant
+      };
     });
 
-    return {
-      ...tenant,
-      tempPassword, // Return temp password so landlord can share it with tenant
-    };
+    return result;
   }
 
   async findAll() {

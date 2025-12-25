@@ -1,9 +1,7 @@
-import { IsString, IsEmail, IsOptional } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTenantDto {
-  @IsEmail()
-  email: string;
-
   @IsString()
   name: string;
 
@@ -13,6 +11,30 @@ export class CreateTenantDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @IsInt()
+  @Type(() => Number)
+  roomId: number;
+
+  @IsDateString()
+  startDate: string;
+
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+
+  @IsInt()
+  @Type(() => Number)
+  monthlyRent: number;
+
+  @IsInt()
+  @Type(() => Number)
+  @IsOptional()
+  deposit?: number;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
 
 

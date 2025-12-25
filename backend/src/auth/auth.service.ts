@@ -18,27 +18,27 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, password, role, name, phone } = registerDto;
+    const { phone, password, role, name } = registerDto;
 
-    // Check if user exists
+    // Check if user exists by phone
     const existingUser = await this.prisma.user.findUnique({
-      where: { email },
+      where: { phone },
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException('Số điện thoại đã được sử dụng');
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user (no email for tenants, optional for landlords)
     const user = await this.prisma.user.create({
       data: {
-        email,
+        phone,
         password: hashedPassword,
         role: role as UserRole,
-        phone,
+        email: null, // No email, use phone as identifier
       },
     });
 
@@ -61,11 +61,12 @@ export class AuthService {
       });
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, phone: user.phone, email: user.email, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
+        phone: user.phone,
         email: user.email,
         role: user.role,
       },
@@ -73,27 +74,29 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const { email, password } = loginDto;
+    const { phone, password } = loginDto;
 
+    // Find user by phone
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { phone },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, phone: user.phone, email: user.email, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
+        phone: user.phone,
         email: user.email,
         role: user.role,
       },

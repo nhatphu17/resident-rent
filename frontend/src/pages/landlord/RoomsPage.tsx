@@ -16,6 +16,10 @@ interface Room {
   waterPrice: number;
   status: string;
   description?: string;
+  ward?: string;
+  district?: string;
+  province?: string;
+  qrCodeImage?: string;
 }
 
 export default function RoomsPage() {
@@ -32,7 +36,12 @@ export default function RoomsPage() {
     waterPrice: '25000',
     status: 'available',
     description: '',
+    ward: '',
+    district: '',
+    province: '',
+    qrCodeImage: '',
   });
+  const [qrPreview, setQrPreview] = useState<string>('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -50,6 +59,19 @@ export default function RoomsPage() {
     }
   };
 
+  const handleQrImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, qrCodeImage: base64String });
+        setQrPreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -61,6 +83,10 @@ export default function RoomsPage() {
         price: Number(formData.price),
         electricPrice: Number(formData.electricPrice),
         waterPrice: Number(formData.waterPrice),
+        ward: formData.ward || undefined,
+        district: formData.district || undefined,
+        province: formData.province || undefined,
+        qrCodeImage: formData.qrCodeImage || undefined,
       };
 
       if (editingRoom) {
@@ -71,6 +97,7 @@ export default function RoomsPage() {
 
       setShowForm(false);
       setEditingRoom(null);
+      setQrPreview('');
       setFormData({
         roomNumber: '',
         floor: '',
@@ -80,6 +107,10 @@ export default function RoomsPage() {
         waterPrice: '25000',
         status: 'available',
         description: '',
+        ward: '',
+        district: '',
+        province: '',
+        qrCodeImage: '',
       });
       fetchRooms();
     } catch (err: any) {
@@ -98,7 +129,12 @@ export default function RoomsPage() {
       waterPrice: room.waterPrice.toString(),
       status: room.status,
       description: room.description || '',
+      ward: room.ward || '',
+      district: room.district || '',
+      province: room.province || '',
+      qrCodeImage: room.qrCodeImage || '',
     });
+    setQrPreview(room.qrCodeImage || '');
     setShowForm(true);
   };
 
@@ -117,6 +153,7 @@ export default function RoomsPage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingRoom(null);
+    setQrPreview('');
     setFormData({
       roomNumber: '',
       floor: '',
@@ -126,6 +163,10 @@ export default function RoomsPage() {
       waterPrice: '25000',
       status: 'available',
       description: '',
+      ward: '',
+      district: '',
+      province: '',
+      qrCodeImage: '',
     });
   };
 
@@ -228,12 +269,58 @@ export default function RoomsPage() {
                   </Select>
                 </div>
                 <div className="col-span-2">
+                  <Label>Xã/Phường</Label>
+                  <Input
+                    value={formData.ward}
+                    onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
+                    placeholder="VD: Phường 1, Xã An Phú..."
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>Quận/Huyện</Label>
+                  <Input
+                    value={formData.district}
+                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                    placeholder="VD: Quận 1, Huyện Bình Chánh..."
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>Tỉnh/Thành phố</Label>
+                  <Input
+                    value={formData.province}
+                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                    placeholder="VD: TP. Hồ Chí Minh, Hà Nội..."
+                  />
+                </div>
+                <div className="col-span-2">
                   <Label>Mô tả</Label>
                   <Input
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Mô tả về phòng..."
                   />
+                </div>
+                <div className="col-span-2">
+                  <Label>QR Code thanh toán (Hình ảnh)</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleQrImageChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tải lên hình ảnh QR code thanh toán cọc (PNG, JPG, max 5MB)
+                  </p>
+                  {qrPreview && (
+                    <div className="mt-2">
+                      <p className="text-sm font-medium mb-2">Xem trước:</p>
+                      <img
+                        src={qrPreview}
+                        alt="QR Code preview"
+                        className="max-w-xs border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 pt-2">

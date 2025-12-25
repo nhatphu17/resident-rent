@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import HomePage from './pages/HomePage';
+import RoomDetailPage from './pages/RoomDetailPage';
 import LandlordDashboard from './pages/LandlordDashboard';
 import TenantDashboard from './pages/TenantDashboard';
 
@@ -32,6 +34,8 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/room/:id" element={<RoomDetailPage />} />
       <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={user.role === 'LANDLORD' ? '/landlord' : '/tenant'} replace />} />
       <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to={user.role === 'LANDLORD' ? '/landlord' : '/tenant'} replace />} />
       <Route
@@ -50,7 +54,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to={user ? (user.role === 'LANDLORD' ? '/landlord' : '/tenant') : '/login'} replace />} />
     </Routes>
   );
 }

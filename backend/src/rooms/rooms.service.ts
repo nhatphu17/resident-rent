@@ -16,6 +16,73 @@ export class RoomsService {
     });
   }
 
+  async findAvailableRooms() {
+    return this.prisma.room.findMany({
+      where: {
+        status: 'available',
+      },
+      select: {
+        id: true,
+        roomNumber: true,
+        floor: true,
+        area: true,
+        price: true,
+        electricPrice: true,
+        waterPrice: true,
+        description: true,
+        ward: true,
+        district: true,
+        province: true,
+        qrCodeImage: true,
+        landlord: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            address: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async findOnePublic(id: number) {
+    const room = await this.prisma.room.findFirst({
+      where: { id, status: 'available' },
+      select: {
+        id: true,
+        roomNumber: true,
+        floor: true,
+        area: true,
+        price: true,
+        electricPrice: true,
+        waterPrice: true,
+        description: true,
+        ward: true,
+        district: true,
+        province: true,
+        qrCodeImage: true,
+        landlord: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            address: true,
+          },
+        },
+      },
+    });
+
+    if (!room) {
+      throw new NotFoundException(`Room with ID ${id} not found or not available`);
+    }
+
+    return room;
+  }
+
   async findAll(landlordId?: number) {
     const where = landlordId ? { landlordId } : {};
     return this.prisma.room.findMany({
