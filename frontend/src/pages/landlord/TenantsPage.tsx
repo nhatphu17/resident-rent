@@ -76,8 +76,11 @@ export default function TenantsPage() {
     try {
       const response = await api.get('/tenants');
       setTenants(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching tenants:', error);
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
+        setError('Không thể kết nối đến server. Vui lòng kiểm tra xem backend đã chạy chưa (port 3000).');
+      }
     } finally {
       setLoading(false);
     }
@@ -145,7 +148,16 @@ export default function TenantsPage() {
       }
       fetchTenants();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Lỗi khi lưu người thuê');
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
+        setError('Không thể kết nối đến server. Vui lòng kiểm tra xem backend đã chạy chưa (port 3000).');
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(`Lỗi: ${err.message}`);
+      } else {
+        setError('Lỗi khi lưu người thuê. Vui lòng thử lại.');
+      }
+      console.error('Error saving tenant:', err);
     }
   };
 
