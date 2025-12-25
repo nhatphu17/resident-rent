@@ -1,8 +1,8 @@
-import { IsString, IsInt, IsOptional } from 'class-validator';
+import { IsString, IsEmail, IsOptional } from 'class-validator';
 
 export class CreateTenantDto {
-  @IsInt()
-  userId: number;
+  @IsEmail()
+  email: string;
 
   @IsString()
   name: string;
