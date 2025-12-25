@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Room {
   id: number;
@@ -21,6 +22,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [formData, setFormData] = useState({
     roomNumber: '',
     floor: '',
@@ -31,6 +33,7 @@ export default function RoomsPage() {
     status: 'available',
     description: '',
   });
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchRooms();
@@ -49,16 +52,25 @@ export default function RoomsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
-      await api.post('/rooms', {
+      const data = {
         ...formData,
         floor: formData.floor ? Number(formData.floor) : undefined,
         area: formData.area ? Number(formData.area) : undefined,
         price: Number(formData.price),
         electricPrice: Number(formData.electricPrice),
         waterPrice: Number(formData.waterPrice),
-      });
+      };
+
+      if (editingRoom) {
+        await api.patch(`/rooms/${editingRoom.id}`, data);
+      } else {
+        await api.post('/rooms', data);
+      }
+
       setShowForm(false);
+      setEditingRoom(null);
       setFormData({
         roomNumber: '',
         floor: '',
@@ -70,10 +82,51 @@ export default function RoomsPage() {
         description: '',
       });
       fetchRooms();
-    } catch (error) {
-      console.error('Error creating room:', error);
-      alert('Lỗi khi tạo phòng');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Lỗi khi lưu phòng');
     }
+  };
+
+  const handleEdit = (room: Room) => {
+    setEditingRoom(room);
+    setFormData({
+      roomNumber: room.roomNumber,
+      floor: room.floor?.toString() || '',
+      area: room.area?.toString() || '',
+      price: room.price.toString(),
+      electricPrice: room.electricPrice.toString(),
+      waterPrice: room.waterPrice.toString(),
+      status: room.status,
+      description: room.description || '',
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa phòng này?')) {
+      return;
+    }
+    try {
+      await api.delete(`/rooms/${id}`);
+      fetchRooms();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Lỗi khi xóa phòng');
+    }
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingRoom(null);
+    setFormData({
+      roomNumber: '',
+      floor: '',
+      area: '',
+      price: '',
+      electricPrice: '3500',
+      waterPrice: '25000',
+      status: 'available',
+      description: '',
+    });
   };
 
   if (loading) return <div>Loading...</div>;
@@ -88,12 +141,22 @@ export default function RoomsPage() {
       </div>
 
       {showForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Thêm phòng mới</CardTitle>
+        <Card className="mb-6 border-primary/20 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
+            <CardTitle className="text-primary">
+              {editingRoom ? 'Sửa thông tin phòng' : 'Thêm phòng mới'}
+            </CardTitle>
+            <CardDescription>
+              {editingRoom ? 'Cập nhật thông tin phòng' : 'Nhập thông tin phòng để thêm vào hệ thống'}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+                  {error}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Số phòng</Label>
@@ -146,15 +209,36 @@ export default function RoomsPage() {
                     required
                   />
                 </div>
+                <div>
+                  <Label>Trạng thái</Label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Trống</SelectItem>
+                      <SelectItem value="occupied">Đã thuê</SelectItem>
+                      <SelectItem value="maintenance">Bảo trì</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Mô tả</Label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Mô tả về phòng..."
+                  />
+                </div>
               </div>
-              <div>
-                <Label>Mô tả</Label>
-                <Input
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" className="bg-primary hover:bg-primary/90">
+                  {editingRoom ? 'Cập nhật' : 'Tạo phòng'}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Hủy
+                </Button>
               </div>
-              <Button type="submit">Tạo phòng</Button>
             </form>
           </CardContent>
         </Card>
@@ -162,25 +246,66 @@ export default function RoomsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {rooms.map((room) => (
-          <Card key={room.id}>
-            <CardHeader>
-              <CardTitle>Phòng {room.roomNumber}</CardTitle>
+          <Card key={room.id} className="hover:shadow-lg transition-shadow border-primary/10">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-primary">Phòng {room.roomNumber}</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(room)}
+                    className="h-8 px-3 text-primary border-primary/30 hover:bg-primary/10"
+                  >
+                    Sửa
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(room.id)}
+                    className="h-8 px-3"
+                  >
+                    Xóa
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">Tầng: {room.floor || 'N/A'}</p>
-              <p className="text-sm text-gray-600">Diện tích: {room.area || 'N/A'} m²</p>
-              <p className="text-lg font-semibold mt-2">
-                {Number(room.price).toLocaleString('vi-VN')} VNĐ/tháng
-              </p>
-              <p className="text-sm text-gray-600">
-                Điện: {Number(room.electricPrice).toLocaleString('vi-VN')} VNĐ/kWh
-              </p>
-              <p className="text-sm text-gray-600">
-                Nước: {Number(room.waterPrice).toLocaleString('vi-VN')} VNĐ/m³
-              </p>
-              <p className="text-sm mt-2">
-                Trạng thái: <span className="font-semibold">{room.status}</span>
-              </p>
+            <CardContent className="pt-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Tầng:</span> {room.floor || 'N/A'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Diện tích:</span> {room.area || 'N/A'} m²
+                </p>
+                <p className="text-lg font-semibold mt-3 text-primary">
+                  {Number(room.price).toLocaleString('vi-VN')} VNĐ/tháng
+                </p>
+                <div className="pt-2 border-t border-primary/10">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">Điện:</span> {Number(room.electricPrice).toLocaleString('vi-VN')} VNĐ/kWh
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">Nước:</span> {Number(room.waterPrice).toLocaleString('vi-VN')} VNĐ/m³
+                  </p>
+                </div>
+                <p className="text-sm mt-2">
+                  <span className="font-medium">Trạng thái:</span>{' '}
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                    room.status === 'available' ? 'bg-green-100 text-green-700' :
+                    room.status === 'occupied' ? 'bg-blue-100 text-blue-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {room.status === 'available' ? 'Trống' :
+                     room.status === 'occupied' ? 'Đã thuê' : 'Bảo trì'}
+                  </span>
+                </p>
+                {room.description && (
+                  <p className="text-sm text-muted-foreground mt-2 italic">
+                    {room.description}
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
