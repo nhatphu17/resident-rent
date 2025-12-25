@@ -17,17 +17,35 @@ export class ContractsService {
       throw new ForbiddenException('Room does not belong to this landlord');
     }
 
-    return this.prisma.contract.create({
-      data: {
-        ...createContractDto,
-        landlordId,
-      },
-      include: {
-        tenant: true,
-        room: true,
-        landlord: true,
-      },
+    // Check if room is available
+    if (room.status !== 'available') {
+      throw new ForbiddenException('Room is not available');
+    }
+
+    // Create contract and update room status in a transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      const contract = await tx.contract.create({
+        data: {
+          ...createContractDto,
+          landlordId,
+        },
+        include: {
+          tenant: true,
+          room: true,
+          landlord: true,
+        },
+      });
+
+      // Update room status to occupied
+      await tx.room.update({
+        where: { id: createContractDto.roomId },
+        data: { status: 'occupied' },
+      });
+
+      return contract;
     });
+
+    return result;
   }
 
   async findAll(landlordId?: number, tenantId?: number) {

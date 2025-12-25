@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import TenantInvoicesPage from './tenant/TenantInvoicesPage';
 import TenantUsagePage from './tenant/TenantUsagePage';
+import TenantContractsPage from './tenant/TenantContractsPage';
 
 export default function TenantDashboard() {
   const { user, logout } = useAuth();
@@ -24,14 +25,20 @@ export default function TenantDashboard() {
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <Link
+                  to="/tenant/contracts"
+                  className="border-transparent text-gray-600 hover:text-primary hover:border-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
+                >
+                  Hợp đồng
+                </Link>
+                <Link
                   to="/tenant/invoices"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="border-transparent text-gray-600 hover:text-primary hover:border-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
                 >
                   Hóa đơn
                 </Link>
                 <Link
                   to="/tenant/usage"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  className="border-transparent text-gray-600 hover:text-primary hover:border-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
                 >
                   Lịch sử điện nước
                 </Link>
@@ -49,7 +56,8 @@ export default function TenantDashboard() {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <Routes>
-          <Route path="/" element={<TenantInvoicesPage />} />
+          <Route path="/" element={<TenantContractsPage />} />
+          <Route path="/contracts" element={<TenantContractsPage />} />
           <Route path="/invoices" element={<TenantInvoicesPage />} />
           <Route path="/usage" element={<TenantUsagePage />} />
         </Routes>
