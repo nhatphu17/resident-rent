@@ -217,7 +217,10 @@ export class InvoicesService {
       day: '2-digit',
     });
 
-    const message = `Hóa đơn tháng ${invoice.month}/${invoice.year} - Phòng ${invoice.room.roomNumber}: ${invoice.totalAmount.toLocaleString('vi-VN')} VNĐ. Hạn thanh toán: ${formattedDate}`;
+    const totalAmount = Number(invoice.totalAmount);
+    const formattedAmount = totalAmount.toLocaleString('vi-VN');
+
+    const message = `Hóa đơn tháng ${invoice.month}/${invoice.year} - Phòng ${invoice.room.roomNumber}: ${formattedAmount} VNĐ. Hạn thanh toán: ${formattedDate}`;
 
     await this.smsService.sendSms(phone, message);
     return { success: true, message: 'SMS sent successfully' };
