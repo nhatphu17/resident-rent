@@ -159,12 +159,17 @@ export default function RoomsPage() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Số phòng</Label>
+                  <Label htmlFor="roomNumber">Số phòng *</Label>
                   <Input
+                    id="roomNumber"
                     value={formData.roomNumber}
                     onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
+                    placeholder="VD: 101, 201, A1, B2..."
                     required
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Số phòng để phân biệt các phòng (VD: 101, 201, A1, B2...). Mỗi chủ trọ có thể quản lý nhiều phòng với số phòng khác nhau.
+                  </p>
                 </div>
                 <div>
                   <Label>Tầng</Label>

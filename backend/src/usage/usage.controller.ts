@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UsageService } from './usage.service';
@@ -39,8 +40,9 @@ export class UsageController {
 
   @Get()
   @Roles(UserRole.LANDLORD, UserRole.TENANT)
-  findAll(@Param('roomId') roomId?: number) {
-    return this.usageService.findAll(roomId);
+  findAll(@Query('roomId') roomId?: string) {
+    const roomIdNum = roomId ? Number(roomId) : undefined;
+    return this.usageService.findAll(roomIdNum);
   }
 
   @Get(':id')

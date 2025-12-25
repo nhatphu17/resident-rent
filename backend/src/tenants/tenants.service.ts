@@ -74,6 +74,42 @@ export class TenantsService {
     });
   }
 
+  async findAllByLandlord(landlordId: number) {
+    // Get all tenants that have contracts with this landlord's rooms
+    const contracts = await this.prisma.contract.findMany({
+      where: {
+        landlordId,
+      },
+      select: {
+        tenantId: true,
+      },
+      distinct: ['tenantId'],
+    });
+
+    const tenantIds = contracts.map((c) => c.tenantId);
+
+    if (tenantIds.length === 0) {
+      return [];
+    }
+
+    return this.prisma.tenant.findMany({
+      where: {
+        id: {
+          in: tenantIds,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+  }
+
   async findOne(id: number) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id },
@@ -120,7 +156,21 @@ export class TenantsService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: number, landlordId?: number) {
+    // If landlordId is provided, verify tenant belongs to this landlord
+    if (landlordId) {
+      const contracts = await this.prisma.contract.findFirst({
+        where: {
+          tenantId: id,
+          landlordId,
+        },
+      });
+
+      if (!contracts) {
+        throw new NotFoundException('Tenant does not belong to this landlord');
+      }
+    }
+
     return this.prisma.tenant.delete({
       where: { id },
     });

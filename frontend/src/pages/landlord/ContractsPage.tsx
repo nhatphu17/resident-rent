@@ -37,6 +37,7 @@ export default function ContractsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [formData, setFormData] = useState({
     tenantId: '',
     roomId: '',
@@ -97,11 +98,17 @@ export default function ContractsPage() {
         monthlyRent: Number(formData.monthlyRent),
         deposit: formData.deposit ? Number(formData.deposit) : undefined,
         notes: formData.notes || undefined,
-        status: 'active',
+        status: editingContract ? editingContract.status : 'active',
       };
 
-      await api.post('/contracts', data);
+      if (editingContract) {
+        await api.patch(`/contracts/${editingContract.id}`, data);
+      } else {
+        await api.post('/contracts', data);
+      }
+
       setShowForm(false);
+      setEditingContract(null);
       setFormData({
         tenantId: '',
         roomId: '',
@@ -114,8 +121,49 @@ export default function ContractsPage() {
       fetchContracts();
       fetchRooms(); // Refresh to update room status
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Lỗi khi tạo hợp đồng');
+      setError(err.response?.data?.message || 'Lỗi khi lưu hợp đồng');
     }
+  };
+
+  const handleEdit = (contract: Contract) => {
+    setEditingContract(contract);
+    setFormData({
+      tenantId: contract.tenant.id.toString(),
+      roomId: contract.room.id.toString(),
+      startDate: contract.startDate.split('T')[0],
+      endDate: contract.endDate ? contract.endDate.split('T')[0] : '',
+      monthlyRent: contract.monthlyRent.toString(),
+      deposit: contract.deposit ? contract.deposit.toString() : '',
+      notes: contract.notes || '',
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa hợp đồng này? Hành động này không thể hoàn tác.')) {
+      return;
+    }
+    try {
+      await api.delete(`/contracts/${id}`);
+      fetchContracts();
+      fetchRooms(); // Refresh to update room status
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Lỗi khi xóa hợp đồng');
+    }
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingContract(null);
+    setFormData({
+      tenantId: '',
+      roomId: '',
+      startDate: '',
+      endDate: '',
+      monthlyRent: '',
+      deposit: '',
+      notes: '',
+    });
   };
 
   const handleRoomChange = (roomId: string) => {
@@ -140,8 +188,12 @@ export default function ContractsPage() {
       {showForm && (
         <Card className="mb-6 border-primary/20 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
-            <CardTitle className="text-primary">Tạo hợp đồng mới</CardTitle>
-            <CardDescription>Nhập thông tin hợp đồng thuê phòng</CardDescription>
+            <CardTitle className="text-primary">
+              {editingContract ? 'Sửa hợp đồng' : 'Tạo hợp đồng mới'}
+            </CardTitle>
+            <CardDescription>
+              {editingContract ? 'Cập nhật thông tin hợp đồng' : 'Nhập thông tin hợp đồng thuê phòng'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -240,9 +292,9 @@ export default function ContractsPage() {
               </div>
               <div className="flex gap-2 pt-2">
                 <Button type="submit" className="bg-primary hover:bg-primary/90">
-                  Tạo hợp đồng
+                  {editingContract ? 'Cập nhật' : 'Tạo hợp đồng'}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={handleCancel}>
                   Hủy
                 </Button>
               </div>
@@ -255,9 +307,29 @@ export default function ContractsPage() {
         {contracts.map((contract) => (
           <Card key={contract.id} className="hover:shadow-lg transition-shadow border-primary/10">
             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-              <CardTitle className="text-primary">
-                Hợp đồng - Phòng {contract.room.roomNumber}
-              </CardTitle>
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-primary">
+                  Hợp đồng - Phòng {contract.room.roomNumber}
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(contract)}
+                    className="h-8 px-3 text-primary border-primary/30 hover:bg-primary/10"
+                  >
+                    Sửa
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(contract.id)}
+                    className="h-8 px-3"
+                  >
+                    Xóa
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-2">

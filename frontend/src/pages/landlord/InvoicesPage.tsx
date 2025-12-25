@@ -83,7 +83,30 @@ export default function InvoicesPage() {
 
   return (
     <div className="px-4 py-6">
-      <h2 className="text-2xl font-bold mb-6">Quản lý hóa đơn</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Quản lý hóa đơn</h2>
+      </div>
+      <Card className="mb-6 border-primary/20 bg-blue-50/50">
+        <CardContent className="pt-6">
+          <div className="space-y-2">
+            <h3 className="font-semibold text-primary">Hóa đơn được tạo khi nào?</h3>
+            <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+              <li>
+                <strong>Tự động:</strong> Hệ thống tự động tạo hóa đơn vào ngày 1 hàng tháng cho tất cả hợp đồng đang hoạt động
+              </li>
+              <li>
+                <strong>Khi nhập chỉ số:</strong> Khi bạn nhập chỉ số điện/nước cho một phòng, hóa đơn sẽ được tạo tự động nếu chưa có
+              </li>
+              <li>
+                <strong>Thủ công:</strong> Có thể tạo hóa đơn thủ công thông qua API (nếu cần)
+              </li>
+            </ul>
+            <p className="text-xs text-muted-foreground mt-2 italic">
+              Lưu ý: Hóa đơn chỉ được tạo khi đã có hợp đồng đang hoạt động và đã nhập chỉ số điện/nước cho tháng đó.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
       <div className="space-y-4">
         {invoices.map((invoice) => (
           <Card key={invoice.id}>
