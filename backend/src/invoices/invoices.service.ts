@@ -210,7 +210,14 @@ export class InvoicesService {
       throw new NotFoundException('Tenant phone number not found');
     }
 
-    const message = `Hóa đơn tháng ${invoice.month}/${invoice.year} - Phòng ${invoice.room.roomNumber}: ${invoice.totalAmount.toLocaleString('vi-VN')} VNĐ. Hạn thanh toán: ${invoice.dueDate.toLocaleDateString('vi-VN')}`;
+    const dueDate = new Date(invoice.dueDate);
+    const formattedDate = dueDate.toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
+    const message = `Hóa đơn tháng ${invoice.month}/${invoice.year} - Phòng ${invoice.room.roomNumber}: ${invoice.totalAmount.toLocaleString('vi-VN')} VNĐ. Hạn thanh toán: ${formattedDate}`;
 
     await this.smsService.sendSms(phone, message);
     return { success: true, message: 'SMS sent successfully' };
