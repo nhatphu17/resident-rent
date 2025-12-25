@@ -13,6 +13,15 @@ interface Tenant {
   user: {
     email: string;
   };
+  contracts?: Array<{
+    id: number;
+    status: string;
+    room: {
+      id: number;
+      roomNumber: string;
+      floor?: number;
+    };
+  }>;
 }
 
 export default function TenantsPage() {
@@ -308,6 +317,42 @@ export default function TenantsPage() {
                     <span className="font-medium">Địa chỉ:</span> {tenant.address}
                   </p>
                 )}
+                <div className="pt-2 border-t border-primary/10">
+                  {tenant.contracts && tenant.contracts.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-primary">Thông tin phòng:</p>
+                      {tenant.contracts
+                        .filter((c) => c.status === 'active')
+                        .map((contract) => (
+                          <div key={contract.id} className="flex items-center gap-2">
+                            <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700">
+                              Phòng {contract.room.roomNumber}
+                              {contract.room.floor && ` - Tầng ${contract.room.floor}`}
+                            </span>
+                            <span className="text-xs text-green-600 font-medium">(Đang thuê)</span>
+                          </div>
+                        ))}
+                      {tenant.contracts.filter((c) => c.status !== 'active').length > 0 && (
+                        <div className="mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            Đã có {tenant.contracts.filter((c) => c.status !== 'active').length} hợp đồng trước đó
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700">
+                          ⚠️ Chưa có phòng
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground italic">
+                        Vào mục "Hợp đồng" để tạo hợp đồng và gán phòng cho người thuê này
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

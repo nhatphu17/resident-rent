@@ -75,7 +75,7 @@ export class TenantsService {
   }
 
   async findAllByLandlord(landlordId: number) {
-    // Get all tenants that have contracts with this landlord's rooms
+    // Get all tenants that have contracts with this landlord's rooms (including expired/terminated)
     const contracts = await this.prisma.contract.findMany({
       where: {
         landlordId,
@@ -104,6 +104,23 @@ export class TenantsService {
             id: true,
             email: true,
             phone: true,
+          },
+        },
+        contracts: {
+          where: {
+            landlordId,
+          },
+          include: {
+            room: {
+              select: {
+                id: true,
+                roomNumber: true,
+                floor: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
           },
         },
       },
