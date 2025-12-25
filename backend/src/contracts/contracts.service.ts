@@ -22,11 +22,22 @@ export class ContractsService {
       throw new ForbiddenException('Room is not available');
     }
 
+    // Convert date strings to DateTime objects
+    const startDate = new Date(createContractDto.startDate);
+    const endDate = createContractDto.endDate ? new Date(createContractDto.endDate) : null;
+
     // Create contract and update room status in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
       const contract = await tx.contract.create({
         data: {
-          ...createContractDto,
+          tenantId: createContractDto.tenantId,
+          roomId: createContractDto.roomId,
+          startDate: startDate,
+          endDate: endDate,
+          monthlyRent: createContractDto.monthlyRent,
+          deposit: createContractDto.deposit,
+          status: createContractDto.status || 'active',
+          notes: createContractDto.notes,
           landlordId,
         },
         include: {
@@ -97,9 +108,19 @@ export class ContractsService {
 
   async update(id: number, landlordId: number, updateContractDto: UpdateContractDto) {
     const contract = await this.findOne(id, landlordId);
+    
+    // Convert date strings to DateTime objects if provided
+    const updateData: any = { ...updateContractDto };
+    if (updateContractDto.startDate) {
+      updateData.startDate = new Date(updateContractDto.startDate);
+    }
+    if (updateContractDto.endDate) {
+      updateData.endDate = new Date(updateContractDto.endDate);
+    }
+    
     return this.prisma.contract.update({
       where: { id },
-      data: updateContractDto,
+      data: updateData,
       include: {
         tenant: true,
         room: true,
