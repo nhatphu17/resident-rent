@@ -10,7 +10,10 @@ interface Invoice {
   totalAmount: number;
   status: 'PENDING' | 'PAID' | 'OVERDUE';
   dueDate: string;
-  room: { roomNumber: string };
+  room: { 
+    roomNumber: string;
+    qrCodeImage?: string;
+  };
   roomPrice: number;
   electricUsage: number;
   electricTotal: number;
@@ -104,6 +107,18 @@ export default function TenantInvoicesPage() {
                 <p className="text-sm text-gray-600 mt-4">
                   Hạn thanh toán: {new Date(invoice.dueDate).toLocaleDateString('vi-VN')}
                 </p>
+                {invoice.room.qrCodeImage && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-700 mb-2">QR Code thanh toán:</p>
+                    <div className="flex justify-center">
+                      <img 
+                        src={invoice.room.qrCodeImage} 
+                        alt="QR Code thanh toán" 
+                        className="max-w-xs w-full h-auto border border-gray-300 rounded"
+                      />
+                    </div>
+                  </div>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => handleDownloadPdf(invoice.id)}

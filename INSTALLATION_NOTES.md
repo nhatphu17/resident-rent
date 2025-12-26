@@ -41,3 +41,4 @@ npm install qrcode.react
 2. Đảm bảo backend đang chạy tại `http://localhost:3000` hoặc cập nhật `VITE_API_URL` trong `.env`
 3. QR code sử dụng format VietQR để thanh toán qua ví điện tử
 
+

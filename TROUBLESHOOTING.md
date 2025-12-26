@@ -66,3 +66,4 @@ npx prisma generate
 - Backend phải chạy trước khi frontend gọi API
 - Nếu đổi port backend, cần cập nhật `vite.config.ts`
 
+

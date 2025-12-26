@@ -37,3 +37,4 @@ npx prisma generate
 2. **Địa chỉ chi tiết**: Thêm Xã/Phường, Quận/Huyện, Tỉnh/Thành phố để tìm kiếm chính xác hơn
 3. **Tìm kiếm nâng cao**: Khách có thể tìm phòng theo địa chỉ chi tiết
 
+

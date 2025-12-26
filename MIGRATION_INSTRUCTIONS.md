@@ -24,3 +24,4 @@ Nếu bạn đã có dữ liệu trong database, field `createdByLandlordId` s�
 - Sau khi migration, các tenant mới được tạo sẽ tự động có `createdByLandlordId` được set
 - Các tenant cũ vẫn hoạt động bình thường, chỉ là sẽ không xuất hiện trong danh sách cho đến khi có hợp đồng
 
+

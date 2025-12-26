@@ -338,3 +338,4 @@ curl -X GET http://localhost:3000/api/pdf/invoice/1 \
   - Kiểm tra cron job đã được cấu hình
   - Đảm bảo đã nhập chỉ số điện/nước cho tháng đó
 
+

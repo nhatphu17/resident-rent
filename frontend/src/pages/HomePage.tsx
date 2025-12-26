@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, Bed, Bath, Square, Phone, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -31,6 +32,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     fetchRooms();
@@ -80,19 +82,48 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-primary">🏠 Tìm Phòng Trọ</h1>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/login')}
-                className="hidden sm:flex"
-              >
-                Đăng nhập
-              </Button>
-              <Button
-                onClick={() => navigate('/register')}
-                className="bg-primary hover:bg-primary/90"
-              >
-                Đăng ký
-              </Button>
+              {user ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (user.role === 'LANDLORD') {
+                        navigate('/landlord');
+                      } else {
+                        navigate('/tenant');
+                      }
+                    }}
+                    className="hidden sm:flex"
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      logout();
+                      navigate('/');
+                    }}
+                  >
+                    Đăng xuất
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/login')}
+                    className="hidden sm:flex"
+                  >
+                    Đăng nhập
+                  </Button>
+                  <Button
+                    onClick={() => navigate('/register')}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Đăng ký
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

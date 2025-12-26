@@ -200,6 +200,24 @@ export class UsageService {
     });
   }
 
+  async findAllByRoomIds(roomIds: number[]) {
+    return this.prisma.usage.findMany({
+      where: {
+        roomId: {
+          in: roomIds,
+        },
+      },
+      include: {
+        room: true,
+        invoice: true,
+      },
+      orderBy: [
+        { year: 'desc' },
+        { month: 'desc' },
+      ],
+    });
+  }
+
   async findOne(id: number) {
     return this.prisma.usage.findUnique({
       where: { id },

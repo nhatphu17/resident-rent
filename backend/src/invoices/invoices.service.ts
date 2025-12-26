@@ -155,7 +155,11 @@ export class InvoicesService {
       where,
       include: {
         tenant: true,
-        room: true,
+        room: {
+          include: {
+            landlord: true,
+          },
+        },
         contract: true,
         usage: true,
       },
