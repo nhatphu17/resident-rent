@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -27,8 +28,16 @@ export class RoomsController {
   ) {}
 
   @Get('public')
-  async findAvailableRooms() {
-    return this.roomsService.findAvailableRooms();
+  async findAvailableRooms(
+    @Query('latitude') latitude?: string,
+    @Query('longitude') longitude?: string,
+    @Query('maxDistance') maxDistance?: string,
+  ) {
+    const userLat = latitude ? parseFloat(latitude) : undefined;
+    const userLng = longitude ? parseFloat(longitude) : undefined;
+    const maxDist = maxDistance ? parseFloat(maxDistance) : undefined;
+
+    return this.roomsService.findAvailableRooms(userLat, userLng, maxDist);
   }
 
   @Get('public/:id')

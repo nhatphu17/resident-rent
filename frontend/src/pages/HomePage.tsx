@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Search, MapPin, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { calculateDistance, formatDistance } from '@/utils/distance';
+import { formatDistance } from '@/utils/distance';
 import { getImageUrl } from '@/lib/utils';
 import axios from 'axios';
 
@@ -31,7 +31,7 @@ interface Room {
     phone: string;
     address?: string;
   };
-  distance?: number; // Distance in km (calculated client-side)
+  distance?: number; // Distance in km (calculated by backend)
 }
 
 export default function HomePage() {
@@ -60,7 +60,7 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchRooms();
-  }, []);
+  }, [latitude, longitude, maxDistance]); // Refetch when location or filter changes
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -71,8 +71,24 @@ export default function HomePage() {
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/rooms/public`);
-      setRooms(response.data);
+      // Build query params with location if available
+      const params = new URLSearchParams();
+      if (latitude && longitude) {
+        params.append('latitude', latitude.toString());
+        params.append('longitude', longitude.toString());
+        if (maxDistance !== null) {
+          params.append('maxDistance', maxDistance.toString());
+        }
+      }
+
+      const queryString = params.toString();
+      const url = `${API_URL}/api/rooms/public${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await axios.get(url);
+      const roomsData = response.data;
+      
+      // Backend now returns rooms with distance already calculated and sorted
+      setRooms(roomsData);
     } catch (error) {
       console.error('Error fetching rooms:', error);
     } finally {
@@ -80,62 +96,27 @@ export default function HomePage() {
     }
   };
 
-  // Calculate distances for rooms
-  const roomsWithDistance = useMemo(() => {
-    if (!latitude || !longitude) return rooms.map(room => ({ ...room, distance: undefined }));
-    
-    return rooms.map(room => {
-      if (room.latitude && room.longitude) {
-        const distance = calculateDistance(latitude, longitude, room.latitude, room.longitude);
-        return { ...room, distance };
-      }
-      return { ...room, distance: undefined };
-    });
-  }, [rooms, latitude, longitude]);
-
-  // Filter and sort rooms
+  // Filter rooms by search term only (distance filtering and sorting is done by backend)
   const filteredRooms = useMemo(() => {
-    let result = roomsWithDistance.filter((room) => {
-      // Filter by search term
-      const searchLower = searchTerm.toLowerCase();
+    if (!searchTerm) {
+      // If no search term, return all rooms (already sorted by backend)
+      return rooms;
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+    return rooms.filter((room) => {
       const fullAddress = [room.ward, room.province, room.landlord.address]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       
-      const matchesSearch = (
+      return (
         fullAddress.includes(searchLower) ||
         room.roomNumber.toLowerCase().includes(searchLower) ||
         (room.description?.toLowerCase().includes(searchLower) || false)
       );
-
-      if (!matchesSearch) return false;
-
-      // Filter by max distance if set and location is available
-      if (maxDistance !== null && latitude && longitude) {
-        if (room.distance === undefined) {
-          // Nếu phòng không có tọa độ, vẫn hiển thị (không filter)
-          return true;
-        }
-        return room.distance <= maxDistance;
-      }
-
-      return true;
     });
-
-    // Auto sort by distance if location is available (mặc định)
-    if (latitude && longitude) {
-      result = result.sort((a, b) => {
-        // Phòng có khoảng cách luôn ưu tiên hơn phòng không có
-        if (a.distance === undefined && b.distance === undefined) return 0;
-        if (a.distance === undefined) return 1;
-        if (b.distance === undefined) return -1;
-        return a.distance - b.distance;
-      });
-    }
-
-    return result;
-  }, [roomsWithDistance, searchTerm, maxDistance, latitude, longitude]);
+  }, [rooms, searchTerm]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);

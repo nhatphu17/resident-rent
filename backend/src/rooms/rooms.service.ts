@@ -4,6 +4,7 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { GeocodingService } from '../geocoding/geocoding.service';
 import { UploadService } from '../upload/upload.service';
+import { calculateDistance } from '../utils/distance.util';
 
 @Injectable()
 export class RoomsService {
@@ -67,8 +68,13 @@ export class RoomsService {
     });
   }
 
-  async findAvailableRooms() {
-    return this.prisma.room.findMany({
+  async findAvailableRooms(
+    userLatitude?: number,
+    userLongitude?: number,
+    maxDistance?: number,
+  ) {
+    // Fetch all available rooms
+    const rooms = await this.prisma.room.findMany({
       where: {
         status: 'available',
       },
@@ -97,10 +103,50 @@ export class RoomsService {
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
     });
+
+    // Calculate distance and filter if user location is provided
+    if (userLatitude && userLongitude) {
+      const roomsWithDistance = rooms
+        .map((room) => {
+          let distance: number | null = null;
+          
+          if (room.latitude && room.longitude) {
+            distance = calculateDistance(
+              userLatitude,
+              userLongitude,
+              Number(room.latitude),
+              Number(room.longitude),
+            );
+          }
+
+          return {
+            ...room,
+            distance,
+          };
+        })
+        .filter((room) => {
+          // Filter by max distance if provided
+          if (maxDistance !== undefined && maxDistance !== null) {
+            // If room has no coordinates, still include it (don't filter out)
+            if (room.distance === null) return true;
+            return room.distance <= maxDistance;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          // Sort by distance: rooms with distance first, then by distance value
+          if (a.distance === null && b.distance === null) return 0;
+          if (a.distance === null) return 1; // Rooms without distance go to end
+          if (b.distance === null) return -1;
+          return a.distance - b.distance;
+        });
+
+      return roomsWithDistance;
+    }
+
+    // If no user location, return rooms as is (no specific sorting needed)
+    return rooms;
   }
 
   async findOnePublic(id: number) {
