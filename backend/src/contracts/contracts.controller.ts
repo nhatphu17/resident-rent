@@ -107,6 +107,18 @@ export class ContractsController {
     });
     return this.contractsService.remove(+id, landlord.id);
   }
+
+  @Patch(':id/terminate')
+  @Roles(UserRole.LANDLORD)
+  async terminate(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    const landlord = await this.prisma.landlord.findUnique({
+      where: { userId: user.id },
+    });
+    return this.contractsService.terminate(+id, landlord.id);
+  }
 }
 
 

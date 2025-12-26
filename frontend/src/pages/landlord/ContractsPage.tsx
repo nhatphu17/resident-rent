@@ -141,15 +141,30 @@ export default function ContractsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa hợp đồng này? Hành động này không thể hoàn tác.')) {
+    if (!confirm('Bạn có chắc chắn muốn xóa hợp đồng này? Hành động này sẽ xóa vĩnh viễn và không thể hoàn tác.')) {
       return;
     }
     try {
       await api.delete(`/contracts/${id}`);
       fetchContracts();
       fetchRooms(); // Refresh to update room status
+      alert('Hợp đồng đã được xóa. Trạng thái phòng đã được reset về trống nếu không còn hợp đồng nào khác.');
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi khi xóa hợp đồng');
+    }
+  };
+
+  const handleTerminate = async (id: number) => {
+    if (!confirm('Bạn có chắc chắn muốn chấm dứt hợp đồng này? Phòng sẽ được reset về trạng thái trống nếu không còn hợp đồng nào khác.')) {
+      return;
+    }
+    try {
+      await api.patch(`/contracts/${id}/terminate`);
+      fetchContracts();
+      fetchRooms(); // Refresh to update room status
+      alert('Hợp đồng đã được chấm dứt. Trạng thái phòng đã được reset về trống nếu không còn hợp đồng nào khác.');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Lỗi khi chấm dứt hợp đồng');
     }
   };
 
@@ -313,14 +328,26 @@ export default function ContractsPage() {
                   Hợp đồng - Phòng {contract.room.roomNumber}
                 </CardTitle>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(contract)}
-                    className="h-8 px-3 text-primary border-primary/30 hover:bg-primary/10"
-                  >
-                    Sửa
-                  </Button>
+                  {contract.status === 'active' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(contract)}
+                      className="h-8 px-3 text-primary border-primary/30 hover:bg-primary/10"
+                    >
+                      Sửa
+                    </Button>
+                  )}
+                  {contract.status === 'active' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTerminate(contract.id)}
+                      className="h-8 px-3 text-orange-600 border-orange-300 hover:bg-orange-50"
+                    >
+                      Chấm dứt
+                    </Button>
+                  )}
                   <Button
                     variant="destructive"
                     size="sm"

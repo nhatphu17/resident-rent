@@ -185,12 +185,13 @@ export default function TenantsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa người thuê này? Hành động này không thể hoàn tác.')) {
+    if (!confirm('Bạn có chắc chắn muốn xóa người thuê này? Hành động này sẽ:\n- Xóa tất cả hợp đồng liên quan\n- Reset trạng thái phòng về trống\n- Xóa tài khoản đăng nhập\nHành động này không thể hoàn tác.')) {
       return;
     }
     try {
       await api.delete(`/tenants/${id}`);
       fetchTenants();
+      alert('Người thuê đã được xóa. Tất cả hợp đồng liên quan đã được xóa và trạng thái phòng đã được reset về trống.');
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi khi xóa người thuê');
     }

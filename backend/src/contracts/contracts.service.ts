@@ -131,8 +131,69 @@ export class ContractsService {
 
   async remove(id: number, landlordId: number) {
     const contract = await this.findOne(id, landlordId);
-    return this.prisma.contract.delete({
-      where: { id },
+    
+    // Delete contract and reset room status if no other active contracts exist
+    return this.prisma.$transaction(async (tx) => {
+      // Delete the contract
+      await tx.contract.delete({
+        where: { id },
+      });
+
+      // Check if room has any other active contracts
+      const otherActiveContracts = await tx.contract.findFirst({
+        where: {
+          roomId: contract.roomId,
+          status: 'active',
+        },
+      });
+
+      // If no other active contracts, reset room status to available
+      if (!otherActiveContracts) {
+        await tx.room.update({
+          where: { id: contract.roomId },
+          data: { status: 'available' },
+        });
+      }
+
+      return { success: true, message: 'Contract deleted and room status updated' };
+    });
+  }
+
+  async terminate(id: number, landlordId: number) {
+    const contract = await this.findOne(id, landlordId);
+    
+    // Terminate contract and reset room status if no other active contracts exist
+    return this.prisma.$transaction(async (tx) => {
+      // Update contract status to terminated
+      await tx.contract.update({
+        where: { id },
+        data: { status: 'terminated' },
+      });
+
+      // Check if room has any other active contracts
+      const otherActiveContracts = await tx.contract.findFirst({
+        where: {
+          roomId: contract.roomId,
+          status: 'active',
+        },
+      });
+
+      // If no other active contracts, reset room status to available
+      if (!otherActiveContracts) {
+        await tx.room.update({
+          where: { id: contract.roomId },
+          data: { status: 'available' },
+        });
+      }
+
+      return this.prisma.contract.findUnique({
+        where: { id },
+        include: {
+          tenant: true,
+          room: true,
+          landlord: true,
+        },
+      });
     });
   }
 }

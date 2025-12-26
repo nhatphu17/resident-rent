@@ -260,8 +260,67 @@ export class TenantsService {
       }
     }
 
-    return this.prisma.tenant.delete({
-      where: { id },
+    // Get all contracts for this tenant
+    const tenantContracts = await this.prisma.contract.findMany({
+      where: {
+        tenantId: id,
+        ...(landlordId ? { landlordId } : {}),
+      },
+      include: {
+        room: true,
+      },
+    });
+
+    // Delete tenant and related data, reset room statuses
+    return this.prisma.$transaction(async (tx) => {
+      // Get room IDs that need to be reset
+      const roomIds = tenantContracts.map((c) => c.roomId);
+
+      // Delete all contracts for this tenant
+      await tx.contract.deleteMany({
+        where: {
+          tenantId: id,
+          ...(landlordId ? { landlordId } : {}),
+        },
+      });
+
+      // For each room, check if it has any other active contracts
+      // If not, reset status to available
+      for (const roomId of roomIds) {
+        const otherActiveContracts = await tx.contract.findFirst({
+          where: {
+            roomId,
+            status: 'active',
+          },
+        });
+
+        if (!otherActiveContracts) {
+          await tx.room.update({
+            where: { id: roomId },
+            data: { status: 'available' },
+          });
+        }
+      }
+
+      // Get user ID before deleting tenant
+      const tenant = await tx.tenant.findUnique({
+        where: { id },
+        select: { userId: true },
+      });
+
+      // Delete tenant
+      await tx.tenant.delete({
+        where: { id },
+      });
+
+      // Delete user account
+      if (tenant) {
+        await tx.user.delete({
+          where: { id: tenant.userId },
+        });
+      }
+
+      return { success: true, message: 'Tenant and related data deleted, room statuses updated' };
     });
   }
 }
