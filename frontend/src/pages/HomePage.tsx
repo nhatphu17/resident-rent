@@ -63,12 +63,22 @@ export default function HomePage() {
     console.log('Geolocation state changed:', { latitude, longitude, error: geoError, loading: geoLoading });
   }, [latitude, longitude, geoError, geoLoading]);
 
+  // Fetch rooms when location or filter changes
   useEffect(() => {
-    // Only fetch rooms after geolocation has finished loading (success or error)
-    if (!geoLoading) {
+    // Don't wait for geolocation - fetch immediately
+    // If geolocation is still loading, fetch without location params
+    // This ensures users see rooms even if geolocation is slow or fails
+    fetchRooms();
+  }, [latitude, longitude, maxDistance]); // Refetch when location or filter changes
+
+  // Also fetch once when geolocation finishes (to update with location if it becomes available)
+  useEffect(() => {
+    if (!geoLoading && (latitude !== null || geoError)) {
+      // Only refetch if geolocation finished AND we have a result (success or error)
+      // This prevents unnecessary refetch when geolocation is still loading
       fetchRooms();
     }
-  }, [latitude, longitude, maxDistance, geoLoading]); // Refetch when location or filter changes, but wait for geolocation to finish
+  }, [geoLoading]); // Refetch when geolocation finishes loading
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -79,6 +89,8 @@ export default function HomePage() {
 
   const fetchRooms = async () => {
     try {
+      setLoading(true);
+      
       // Build query params with location if available
       const params = new URLSearchParams();
       if (latitude && longitude) {
