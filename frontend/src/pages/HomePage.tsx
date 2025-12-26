@@ -461,9 +461,14 @@ export default function HomePage() {
               )}
             </div>
             {geoError && (
-              <p className="text-xs text-muted-foreground text-center">
-                Không thể lấy vị trí. Vui lòng cho phép truy cập vị trí để tìm phòng gần bạn.
-              </p>
+              <div className="text-center">
+                <p className="text-xs text-amber-600 bg-amber-50 px-4 py-2 rounded-lg inline-block">
+                  ⚠️ {geoError}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Bạn vẫn có thể tìm phòng bằng cách nhập địa chỉ vào ô tìm kiếm.
+                </p>
+              </div>
             )}
           </div>
         </div>
