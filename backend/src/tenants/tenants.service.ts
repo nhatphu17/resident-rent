@@ -245,6 +245,25 @@ export class TenantsService {
     });
   }
 
+  async findByPhone(phone: string) {
+    const tenant = await this.prisma.tenant.findFirst({
+      where: {
+        phone,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    return tenant;
+  }
+
   async remove(id: number, landlordId?: number) {
     // If landlordId is provided, verify tenant belongs to this landlord
     if (landlordId) {

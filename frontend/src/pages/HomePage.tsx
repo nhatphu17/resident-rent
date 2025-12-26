@@ -165,9 +165,10 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRooms.map((room) => {
-              const roomImages = room.images ? (() => {
+              const roomImages = room.images && room.images !== 'null' ? (() => {
                 try {
-                  return JSON.parse(room.images);
+                  const parsed = JSON.parse(room.images);
+                  return Array.isArray(parsed) ? parsed : [];
                 } catch {
                   return [];
                 }
@@ -187,7 +188,11 @@ export default function HomePage() {
                       alt={`Phòng ${room.roomNumber}`}
                       className="w-full h-full object-cover"
                     />
-                  ) : null}
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                      <span className="text-muted-foreground text-sm">Chưa có ảnh</span>
+                    </div>
+                  )}
                   <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold">
                     {Number(room.price).toLocaleString('vi-VN')} đ/tháng
                   </div>

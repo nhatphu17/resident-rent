@@ -52,6 +52,10 @@ export default function ContractsPage() {
     notes: '',
   });
   const [error, setError] = useState('');
+  const [searchPhone, setSearchPhone] = useState('');
+  const [searchedTenant, setSearchedTenant] = useState<Tenant | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [tenantSelectionMode, setTenantSelectionMode] = useState<'dropdown' | 'search'>('dropdown');
 
   useEffect(() => {
     fetchContracts();
@@ -89,6 +93,32 @@ export default function ContractsPage() {
     }
   };
 
+  const searchTenantByPhone = async () => {
+    if (!searchPhone.trim()) {
+      setError('Vui lòng nhập số điện thoại');
+      return;
+    }
+
+    setSearching(true);
+    setError('');
+    setSearchedTenant(null);
+
+    try {
+      const response = await api.get(`/tenants/search/phone/${searchPhone.trim()}`);
+      if (response.data) {
+        setSearchedTenant(response.data);
+        setFormData({ ...formData, tenantId: response.data.id.toString() });
+      } else {
+        setError('Không tìm thấy người thuê với số điện thoại này');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Không tìm thấy người thuê với số điện thoại này');
+      setSearchedTenant(null);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -113,6 +143,9 @@ export default function ContractsPage() {
 
       setShowForm(false);
       setEditingContract(null);
+      setSearchedTenant(null);
+      setSearchPhone('');
+      setTenantSelectionMode('dropdown');
       setFormData({
         tenantId: '',
         roomId: '',
@@ -132,6 +165,9 @@ export default function ContractsPage() {
 
   const handleEdit = (contract: Contract) => {
     setEditingContract(contract);
+    setSearchedTenant(null);
+    setSearchPhone('');
+    setTenantSelectionMode('dropdown');
     setFormData({
       tenantId: contract.tenant.id.toString(),
       roomId: contract.room.id.toString(),
@@ -175,6 +211,9 @@ export default function ContractsPage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingContract(null);
+    setSearchedTenant(null);
+    setSearchPhone('');
+    setTenantSelectionMode('dropdown');
     setFormData({
       tenantId: '',
       roomId: '',
@@ -223,24 +262,87 @@ export default function ContractsPage() {
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tenantId">Người thuê *</Label>
-                  <Select
-                    value={formData.tenantId}
-                    onValueChange={(value) => setFormData({ ...formData, tenantId: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn người thuê" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tenants.map((tenant) => (
-                        <SelectItem key={tenant.id} value={tenant.id.toString()}>
-                          {tenant.name} ({tenant.phone || tenant.user?.phone || tenant.user?.email || 'N/A'})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Chọn người thuê *</Label>
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      type="button"
+                      variant={tenantSelectionMode === 'dropdown' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setTenantSelectionMode('dropdown');
+                        setSearchedTenant(null);
+                        setSearchPhone('');
+                        setFormData({ ...formData, tenantId: '' });
+                      }}
+                    >
+                      Chọn từ danh sách
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={tenantSelectionMode === 'search' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setTenantSelectionMode('search');
+                        setSearchedTenant(null);
+                        setSearchPhone('');
+                        setFormData({ ...formData, tenantId: '' });
+                      }}
+                    >
+                      Tìm theo số điện thoại
+                    </Button>
+                  </div>
+                  
+                  {tenantSelectionMode === 'dropdown' ? (
+                    <Select
+                      value={formData.tenantId}
+                      onValueChange={(value) => setFormData({ ...formData, tenantId: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn người thuê từ danh sách" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tenants.map((tenant) => (
+                          <SelectItem key={tenant.id} value={tenant.id.toString()}>
+                            {tenant.name} ({tenant.phone || tenant.user?.phone || tenant.user?.email || 'N/A'})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          type="tel"
+                          placeholder="Nhập số điện thoại (VD: 0901234567)"
+                          value={searchPhone}
+                          onChange={(e) => setSearchPhone(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              searchTenantByPhone();
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          onClick={searchTenantByPhone}
+                          disabled={searching}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          {searching ? 'Đang tìm...' : 'Tìm'}
+                        </Button>
+                      </div>
+                      {searchedTenant && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                          <p className="text-sm font-medium text-green-800">
+                            ✓ Đã tìm thấy: {searchedTenant.name} ({searchedTenant.phone || searchedTenant.user?.phone})
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="roomId">Phòng *</Label>

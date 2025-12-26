@@ -67,6 +67,12 @@ export class TenantsController {
     return this.tenantsService.findAll();
   }
 
+  @Get('search/phone/:phone')
+  @Roles(UserRole.LANDLORD)
+  findByPhone(@Param('phone') phone: string) {
+    return this.tenantsService.findByPhone(phone);
+  }
+
   @Get(':id')
   @Roles(UserRole.LANDLORD, UserRole.TENANT)
   findOne(@Param('id') id: string) {

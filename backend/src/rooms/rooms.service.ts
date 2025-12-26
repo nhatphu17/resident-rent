@@ -34,7 +34,7 @@ export class RoomsService {
         district: true,
         province: true,
         qrCodeImage: true,
-        // images: true, // Uncomment after running migration: npx prisma migrate dev && npx prisma generate
+        images: true,
         landlord: {
           select: {
             id: true,
@@ -66,7 +66,7 @@ export class RoomsService {
         district: true,
         province: true,
         qrCodeImage: true,
-        // images: true, // Uncomment after running migration: npx prisma migrate dev && npx prisma generate
+        images: true,
         landlord: {
           select: {
             id: true,
