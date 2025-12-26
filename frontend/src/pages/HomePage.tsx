@@ -36,21 +36,17 @@ export default function HomePage() {
   const { user, logout } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Banner slides
+  // Banner slides - Using image banners
+  // Place your banner images in: frontend/public/banners/
+  // Recommended size: 1920x600px or similar aspect ratio
   const bannerSlides = [
     {
-      title: 'Tìm phòng quanh bạn – Quản lý trọ tự động',
-      subtitle: 'Không cần chốt điện nước – Không cần nhắc thu tiền – Một app lo tất cả',
-      description: '',
-      bgColor: 'from-blue-500 to-orange-500',
-      showCTA: true,
+      imageUrl: '/banners/banner-1.png', // First banner image
+      alt: 'Tìm phòng quanh bạn – Quản lý trọ tự động',
     },
     {
-      title: 'Trọ Quanh Tôi – Tìm phòng trọ gần bạn & Quản lý trọ tự động',
-      subtitle: 'Nền tảng giúp người thuê tìm phòng gần vị trí hiện tại chỉ trong vài giây, giúp chủ trọ tự động hóa toàn bộ việc quản lý phòng, điện nước và thu tiền – không cần ghi chép, không cần nhắc nhở.',
-      description: '',
-      bgColor: 'from-blue-400 to-orange-400',
-      showCTA: false,
+      imageUrl: '/banners/banner-2.png', // Second banner image  
+      alt: 'Trọ Quanh Tôi – Tìm phòng trọ gần bạn & Quản lý trọ tự động',
     },
   ];
 
@@ -165,7 +161,7 @@ export default function HomePage() {
       </header>
 
       {/* Banner Slider */}
-      <section className="relative h-64 md:h-96 overflow-hidden">
+      <section className="relative h-64 md:h-96 overflow-hidden bg-gray-100">
         {bannerSlides.map((slide, index) => (
           <div
             key={index}
@@ -173,34 +169,24 @@ export default function HomePage() {
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <div className={`h-full bg-gradient-to-r ${slide.bgColor} flex items-center justify-center text-white`}>
-              <div className="text-center px-4 max-w-5xl w-full">
-                <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                  {slide.title}
-                </h2>
-                <p className="text-base md:text-lg lg:text-xl mb-6 opacity-95 leading-relaxed">
-                  {slide.subtitle}
-                </p>
-                {slide.showCTA && (
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
-                    <Button
-                      size="lg"
-                      className="bg-green-500 hover:bg-green-600 text-white text-lg px-8 py-6 font-semibold"
-                      onClick={() => {
-                        window.scrollTo({ top: document.getElementById('rooms-section')?.offsetTop || 0, behavior: 'smooth' });
-                      }}
-                    >
-                      👉 Tìm phòng ngay
-                    </Button>
-                    <Button
-                      size="lg"
-                      className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-8 py-6 font-semibold"
-                      onClick={() => navigate('/register')}
-                    >
-                      👉 Dành cho chủ trọ
-                    </Button>
-                  </div>
-                )}
+            <img
+              src={slide.imageUrl}
+              alt={slide.alt}
+              className="w-full h-full object-cover object-center"
+              onError={(e) => {
+                // Fallback if image doesn't exist
+                e.currentTarget.style.display = 'none';
+                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+            {/* Fallback gradient if image fails to load */}
+            <div 
+              className="hidden w-full h-full bg-gradient-to-r from-blue-500 to-orange-500 flex items-center justify-center text-white"
+              style={{ display: 'none' }}
+            >
+              <div className="text-center px-4">
+                <h2 className="text-2xl md:text-4xl font-bold mb-4">{slide.alt}</h2>
               </div>
             </div>
           </div>
@@ -209,13 +195,13 @@ export default function HomePage() {
         {/* Navigation Arrows */}
         <button
           onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all z-10"
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/30 text-white p-2 rounded-full transition-all z-10 backdrop-blur-sm"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
         <button
           onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all z-10"
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/30 text-white p-2 rounded-full transition-all z-10 backdrop-blur-sm"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
