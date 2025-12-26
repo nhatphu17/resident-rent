@@ -2,15 +2,37 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { GeocodingService } from '../geocoding/geocoding.service';
 
 @Injectable()
 export class RoomsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private geocodingService: GeocodingService,
+  ) {}
 
   async create(landlordId: number, createRoomDto: CreateRoomDto) {
+    // Auto-geocode if address is provided but coordinates are not
+    let latitude = createRoomDto.latitude;
+    let longitude = createRoomDto.longitude;
+
+    if ((!latitude || !longitude) && (createRoomDto.ward || createRoomDto.province)) {
+      const coordinates = await this.geocodingService.geocodeRoomAddress(
+        createRoomDto.ward,
+        createRoomDto.province,
+      );
+
+      if (coordinates) {
+        latitude = coordinates.latitude;
+        longitude = coordinates.longitude;
+      }
+    }
+
     return this.prisma.room.create({
       data: {
         ...createRoomDto,
+        latitude,
+        longitude,
         landlordId,
       },
     });
@@ -145,9 +167,41 @@ export class RoomsService {
 
   async update(id: number, landlordId: number, updateRoomDto: UpdateRoomDto) {
     const room = await this.findOne(id, landlordId);
+    
+    // Auto-geocode if address is updated but coordinates are not provided
+    let latitude = updateRoomDto.latitude;
+    let longitude = updateRoomDto.longitude;
+
+    // Check if address fields are being updated
+    const wardChanged = updateRoomDto.ward !== undefined && updateRoomDto.ward !== room.ward;
+    const provinceChanged = updateRoomDto.province !== undefined && updateRoomDto.province !== room.province;
+    const addressChanged = wardChanged || provinceChanged;
+
+    // If coordinates are not provided but address fields are updated, geocode
+    if ((!latitude || !longitude) && addressChanged) {
+      const finalWard = updateRoomDto.ward ?? room.ward ?? undefined;
+      const finalProvince = updateRoomDto.province ?? room.province ?? undefined;
+      
+      if (finalWard || finalProvince) {
+        const coordinates = await this.geocodingService.geocodeRoomAddress(
+          finalWard,
+          finalProvince,
+        );
+
+        if (coordinates) {
+          latitude = coordinates.latitude;
+          longitude = coordinates.longitude;
+        }
+      }
+    }
+
     return this.prisma.room.update({
       where: { id },
-      data: updateRoomDto,
+      data: {
+        ...updateRoomDto,
+        latitude: latitude !== undefined ? latitude : room.latitude,
+        longitude: longitude !== undefined ? longitude : room.longitude,
+      },
     });
   }
 

@@ -175,8 +175,12 @@ export default function RoomsPage() {
         waterPrice: Number(formData.waterPrice),
         ward: formData.ward || undefined,
         province: formData.province || undefined,
-        latitude: formData.latitude ? Number(formData.latitude) : undefined,
-        longitude: formData.longitude ? Number(formData.longitude) : undefined,
+        // Latitude and longitude will be automatically geocoded from address by backend
+        // Only send if explicitly provided (for manual override)
+        ...(formData.latitude && formData.longitude ? {
+          latitude: Number(formData.latitude),
+          longitude: Number(formData.longitude),
+        } : {}),
         qrCodeImage: formData.qrCodeImage || undefined,
         images: formData.images || undefined,
       };
@@ -386,31 +390,13 @@ export default function RoomsPage() {
                     placeholder="VD: TP. Hồ Chí Minh, Hà Nội..."
                   />
                 </div>
-                <div>
-                  <Label>Vĩ độ (Latitude) - Tùy chọn</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={formData.latitude}
-                    onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                    placeholder="VD: 10.762622"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Để tính khoảng cách. Lấy từ Google Maps
-                  </p>
-                </div>
-                <div>
-                  <Label>Kinh độ (Longitude) - Tùy chọn</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={formData.longitude}
-                    onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                    placeholder="VD: 106.660172"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Để tính khoảng cách. Lấy từ Google Maps
-                  </p>
+                <div className="col-span-2">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">
+                      <strong>📍 Tọa độ tự động:</strong> Hệ thống sẽ tự động lấy tọa độ (vĩ độ, kinh độ) từ địa chỉ 
+                      (Xã/Phường và Tỉnh/Thành phố) để tính khoảng cách khi khách tìm phòng. Bạn không cần nhập thủ công.
+                    </p>
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <Label>Mô tả</Label>
