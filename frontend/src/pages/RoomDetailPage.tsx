@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Square, ArrowLeft, QrCode, Copy, Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -19,6 +20,7 @@ interface Room {
   district?: string;
   province?: string;
   qrCodeImage?: string;
+  images?: string; // JSON array of base64 images
   landlord: {
     id: number;
     name: string;
@@ -30,10 +32,12 @@ interface Room {
 export default function RoomDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -53,6 +57,15 @@ export default function RoomDetailPage() {
   };
 
   const depositAmount = room ? Number(room.price) * 0.3 : 0; // 30% deposit
+  
+  // Parse room images
+  const roomImages = room?.images ? (() => {
+    try {
+      return JSON.parse(room.images);
+    } catch {
+      return [];
+    }
+  })() : [];
   
   // Build full address
   const fullAddress = room
@@ -106,19 +119,48 @@ export default function RoomDetailPage() {
               Về trang chủ
             </Button>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/login')}
-                className="hidden sm:flex"
-              >
-                Đăng nhập
-              </Button>
-              <Button
-                onClick={() => navigate('/register')}
-                className="bg-primary hover:bg-primary/90"
-              >
-                Đăng ký
-              </Button>
+              {user ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (user.role === 'LANDLORD') {
+                        navigate('/landlord');
+                      } else {
+                        navigate('/tenant');
+                      }
+                    }}
+                    className="hidden sm:flex"
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      logout();
+                      navigate('/');
+                    }}
+                  >
+                    Đăng xuất
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/login')}
+                    className="hidden sm:flex"
+                  >
+                    Đăng nhập
+                  </Button>
+                  <Button
+                    onClick={() => navigate('/register')}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Đăng ký
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -126,8 +168,54 @@ export default function RoomDetailPage() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Room Image Placeholder */}
-          <div className="relative h-64 md:h-96 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg mb-6 overflow-hidden">
+          {/* Room Images Slide */}
+          <div className="relative h-64 md:h-96 rounded-lg mb-6 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/10">
+            {roomImages.length > 0 ? (
+              <>
+                <img
+                  src={roomImages[currentImageIndex]}
+                  alt={`Phòng ${room.roomNumber} - Ảnh ${currentImageIndex + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                {roomImages.length > 1 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? roomImages.length - 1 : prev - 1))}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
+                    >
+                      ‹
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentImageIndex((prev) => (prev === roomImages.length - 1 ? 0 : prev + 1))}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
+                    >
+                      ›
+                    </Button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {roomImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-muted-foreground">Chưa có ảnh phòng</p>
+                </div>
+              </div>
+            )}
             <div className="absolute top-4 right-4 bg-primary text-white px-4 py-2 rounded-full text-lg font-semibold">
               {Number(room.price).toLocaleString('vi-VN')} đ/tháng
             </div>

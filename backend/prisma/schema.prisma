@@ -86,6 +86,7 @@ model Room {
   district      String?  // Quận/Huyện
   province      String?  // Tỉnh/Thành phố
   qrCodeImage   String?  @db.Text // URL hoặc base64 của QR code thanh toán
+  images        String?  @db.Text // JSON array của các ảnh phòng (base64 hoặc URL)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

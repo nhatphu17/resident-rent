@@ -52,6 +52,10 @@ export class CreateRoomDto {
   @IsString()
   @IsOptional()
   qrCodeImage?: string;
+
+  @IsString()
+  @IsOptional()
+  images?: string; // JSON array of base64 images
 }
 
 

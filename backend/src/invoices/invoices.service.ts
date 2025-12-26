@@ -156,8 +156,10 @@ export class InvoicesService {
       include: {
         tenant: true,
         room: {
-          include: {
-            landlord: true,
+          select: {
+            id: true,
+            roomNumber: true,
+            qrCodeImage: true,
           },
         },
         contract: true,

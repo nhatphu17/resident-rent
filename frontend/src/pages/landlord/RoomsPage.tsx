@@ -20,6 +20,7 @@ interface Room {
   district?: string;
   province?: string;
   qrCodeImage?: string;
+  images?: string; // JSON array of base64 images
 }
 
 export default function RoomsPage() {
@@ -40,8 +41,10 @@ export default function RoomsPage() {
     district: '',
     province: '',
     qrCodeImage: '',
+    images: '',
   });
   const [qrPreview, setQrPreview] = useState<string>('');
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -72,6 +75,35 @@ export default function RoomsPage() {
     }
   };
 
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const readers: FileReader[] = [];
+      const newPreviews: string[] = [];
+      let loadedCount = 0;
+
+      Array.from(files).forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result as string);
+          loadedCount++;
+          if (loadedCount === files.length) {
+            setImagePreviews(newPreviews);
+            setFormData({ ...formData, images: JSON.stringify(newPreviews) });
+          }
+        };
+        reader.readAsDataURL(file);
+        readers.push(reader);
+      });
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImagePreviews(newPreviews);
+    setFormData({ ...formData, images: JSON.stringify(newPreviews) });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -86,6 +118,7 @@ export default function RoomsPage() {
         ward: formData.ward || undefined,
         province: formData.province || undefined,
         qrCodeImage: formData.qrCodeImage || undefined,
+        images: formData.images || undefined,
       };
 
       if (editingRoom) {
@@ -97,6 +130,7 @@ export default function RoomsPage() {
       setShowForm(false);
       setEditingRoom(null);
       setQrPreview('');
+      setImagePreviews([]);
       setFormData({
         roomNumber: '',
         floor: '',
@@ -109,6 +143,7 @@ export default function RoomsPage() {
         ward: '',
         province: '',
         qrCodeImage: '',
+        images: '',
       });
       fetchRooms();
     } catch (err: any) {
@@ -118,6 +153,7 @@ export default function RoomsPage() {
 
   const handleEdit = (room: Room) => {
     setEditingRoom(room);
+    const images = room.images ? JSON.parse(room.images) : [];
     setFormData({
       roomNumber: room.roomNumber,
       floor: room.floor?.toString() || '',
@@ -130,8 +166,10 @@ export default function RoomsPage() {
       ward: room.ward || '',
       province: room.province || '',
       qrCodeImage: room.qrCodeImage || '',
+      images: room.images || '',
     });
     setQrPreview(room.qrCodeImage || '');
+    setImagePreviews(images);
     setShowForm(true);
   };
 
@@ -151,6 +189,7 @@ export default function RoomsPage() {
     setShowForm(false);
     setEditingRoom(null);
     setQrPreview('');
+    setImagePreviews([]);
       setFormData({
         roomNumber: '',
         floor: '',
@@ -163,6 +202,7 @@ export default function RoomsPage() {
         ward: '',
         province: '',
         qrCodeImage: '',
+        images: '',
       });
   };
 
@@ -307,6 +347,41 @@ export default function RoomsPage() {
                         alt="QR Code preview"
                         className="max-w-xs border border-gray-300 rounded-lg"
                       />
+                    </div>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <Label>Ảnh phòng (Có thể chọn nhiều ảnh)</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImagesChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tải lên nhiều ảnh phòng để khách hàng xem (PNG, JPG, max 5MB mỗi ảnh)
+                  </p>
+                  {imagePreviews.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={preview}
+                            alt={`Room preview ${index + 1}`}
+                            className="w-full h-32 object-cover border border-gray-300 rounded-lg"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 h-6 w-6 p-0"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

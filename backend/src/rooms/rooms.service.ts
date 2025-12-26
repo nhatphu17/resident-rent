@@ -34,6 +34,7 @@ export class RoomsService {
         district: true,
         province: true,
         qrCodeImage: true,
+        images: true,
         landlord: {
           select: {
             id: true,
@@ -65,6 +66,7 @@ export class RoomsService {
         district: true,
         province: true,
         qrCodeImage: true,
+        images: true,
         landlord: {
           select: {
             id: true,

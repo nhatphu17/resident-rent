@@ -19,6 +19,7 @@ interface Room {
   ward?: string;
   district?: string;
   province?: string;
+  images?: string; // JSON array of base64 images
   landlord: {
     id: number;
     name: string;
@@ -163,13 +164,30 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRooms.map((room) => (
+            {filteredRooms.map((room) => {
+              const roomImages = room.images ? (() => {
+                try {
+                  return JSON.parse(room.images);
+                } catch {
+                  return [];
+                }
+              })() : [];
+              const firstImage = roomImages.length > 0 ? roomImages[0] : null;
+              
+              return (
               <Card
                 key={room.id}
                 className="overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer border-primary/20"
                 onClick={() => navigate(`/room/${room.id}`)}
               >
-                <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary/10">
+                <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary/10 overflow-hidden">
+                  {firstImage ? (
+                    <img
+                      src={firstImage}
+                      alt={`Phòng ${room.roomNumber}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : null}
                   <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold">
                     {Number(room.price).toLocaleString('vi-VN')} đ/tháng
                   </div>
@@ -228,7 +246,8 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
