@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Bed, Bath, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle } from 'lucide-react';
+import { Search, MapPin, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
@@ -59,14 +59,14 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    fetchRooms();
   }, []);
 
   const fetchRooms = async () => {
@@ -94,6 +94,14 @@ export default function HomePage() {
     );
   });
 
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -111,7 +119,7 @@ export default function HomePage() {
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-primary">🏠 Tìm Phòng Trọ</h1>
+            <h1 className="text-2xl font-bold text-primary">🏠 Trọ Quanh Tôi</h1>
             <div className="flex gap-2">
               {user ? (
                 <>
@@ -160,8 +168,207 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-8">
+      {/* Banner Slider */}
+      <section className="relative h-64 md:h-96 overflow-hidden">
+        {bannerSlides.map((slide, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentSlide ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <div className={`h-full bg-gradient-to-r ${slide.bgColor} flex items-center justify-center text-white`}>
+              <div className="text-center px-4 max-w-4xl">
+                <h2 className="text-3xl md:text-5xl font-bold mb-4">{slide.title}</h2>
+                <p className="text-xl md:text-2xl mb-2 font-semibold">{slide.subtitle}</p>
+                <p className="text-lg md:text-xl opacity-90">{slide.description}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {/* Navigation Arrows */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+
+        {/* Dots Indicator */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {bannerSlides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentSlide ? 'bg-white w-8' : 'bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Introduction Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Trọ Quanh Tôi
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Trọ Quanh Tôi là nền tảng giúp người thuê tìm phòng gần vị trí hiện tại chỉ trong vài giây, 
+              đồng thời giúp chủ trọ tự động hóa toàn bộ việc quản lý phòng, điện nước và thu tiền – 
+              không cần ghi chép, không cần nhắc nhở.
+            </p>
+          </div>
+
+          {/* Features for Tenants */}
+          <div className="mb-16">
+            <h3 className="text-2xl font-bold text-center mb-8 text-blue-600">
+              ✨ Dành cho người thuê
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="border-blue-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <Map className="w-12 h-12 mx-auto mb-4 text-blue-500" />
+                  <h4 className="font-semibold mb-2">🔍 Tự động hiển thị phòng trọ xung quanh bạn</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Tìm phòng gần vị trí hiện tại chỉ trong vài giây
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-blue-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <Eye className="w-12 h-12 mx-auto mb-4 text-blue-500" />
+                  <h4 className="font-semibold mb-2">🗺️ Xem vị trí, giá, hình ảnh, tiện ích rõ ràng</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Thông tin chi tiết, minh bạch về phòng trọ
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-blue-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <Phone className="w-12 h-12 mx-auto mb-4 text-blue-500" />
+                  <h4 className="font-semibold mb-2">📱 Liên hệ chủ trọ nhanh chóng</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Liên hệ trực tiếp với chủ trọ qua số điện thoại
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-blue-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <DollarSign className="w-12 h-12 mx-auto mb-4 text-blue-500" />
+                  <h4 className="font-semibold mb-2">💡 Minh bạch tiền điện – nước – phí</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Xem rõ ràng các khoản phí cần thanh toán
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Features for Landlords */}
+          <div>
+            <h3 className="text-2xl font-bold text-center mb-8 text-orange-600">
+              🏠 Dành cho chủ trọ / chung cư mini
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <Card className="border-orange-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <Home className="w-12 h-12 mx-auto mb-4 text-orange-500" />
+                  <h4 className="font-semibold mb-2">🏠 Quản lý phòng & người thuê tập trung</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Quản lý tất cả phòng và người thuê tại một nơi
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-orange-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <Zap className="w-12 h-12 mx-auto mb-4 text-orange-500" />
+                  <h4 className="font-semibold mb-2">⚡ Tự động chốt điện – nước hàng tháng</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Tự động tính toán và chốt chỉ số điện nước
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-orange-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-orange-500" />
+                  <h4 className="font-semibold mb-2">🧾 Tự động tạo bill & gửi cho người thuê</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Tự động tạo hóa đơn và gửi cho người thuê
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-orange-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <Bell className="w-12 h-12 mx-auto mb-4 text-orange-500" />
+                  <h4 className="font-semibold mb-2">🔔 Tự động nhắc thanh toán (Zalo / SMS)</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Tự động gửi thông báo nhắc nhở thanh toán
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-orange-200 hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 text-center">
+                  <DollarSign className="w-12 h-12 mx-auto mb-4 text-orange-500" />
+                  <h4 className="font-semibold mb-2">💰 Theo dõi trạng thái thanh toán real-time</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Xem trạng thái thanh toán theo thời gian thực
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Tìm phòng quanh bạn – Quản lý trọ tự động
+          </h2>
+          <p className="text-xl mb-2 opacity-90">
+            Không cần chốt điện nước
+          </p>
+          <p className="text-xl mb-2 opacity-90">
+            Không cần nhắc thu tiền
+          </p>
+          <p className="text-xl mb-8 font-semibold">
+            Một app lo tất cả
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              size="lg"
+              className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-6"
+              onClick={() => {
+                window.scrollTo({ top: document.getElementById('rooms-section')?.offsetTop || 0, behavior: 'smooth' });
+              }}
+            >
+              👉 Tìm phòng ngay
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-6"
+              onClick={() => navigate('/register')}
+            >
+              👉 Dành cho chủ trọ
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Rooms Section */}
+      <section id="rooms-section" className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Tìm phòng trọ phù hợp với bạn
@@ -285,15 +492,73 @@ export default function HomePage() {
             })}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-12 py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 Tìm Phòng Trọ. Tất cả quyền được bảo lưu.</p>
+      <footer className="bg-gray-900 text-white mt-12">
+        <div className="container mx-auto px-4 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* About App */}
+            <div>
+              <h3 className="text-xl font-bold mb-4">🏠 Trọ Quanh Tôi</h3>
+              <p className="text-gray-400 mb-4">
+                Nền tảng giúp người thuê tìm phòng gần vị trí hiện tại chỉ trong vài giây, 
+                đồng thời giúp chủ trọ tự động hóa toàn bộ việc quản lý phòng, điện nước và thu tiền.
+              </p>
+              <p className="text-sm text-gray-500">
+                © 2024 Trọ Quanh Tôi. Tất cả quyền được bảo lưu.
+              </p>
+            </div>
+
+            {/* Contact Support */}
+            <div>
+              <h3 className="text-xl font-bold mb-4">Liên hệ hỗ trợ</h3>
+              <div className="space-y-3">
+                <div className="flex items-center text-gray-400">
+                  <Phone className="w-5 h-5 mr-3" />
+                  <span>Hotline: 1900-xxxx</span>
+                </div>
+                <div className="flex items-center text-gray-400">
+                  <Mail className="w-5 h-5 mr-3" />
+                  <span>Email: support@troquanhtoi.vn</span>
+                </div>
+                <div className="flex items-center text-gray-400">
+                  <MessageCircle className="w-5 h-5 mr-3" />
+                  <span>Zalo: 090-xxx-xxxx</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h3 className="text-xl font-bold mb-4">Liên kết nhanh</h3>
+              <div className="space-y-2">
+                <Button
+                  variant="link"
+                  className="text-gray-400 hover:text-white p-0 justify-start"
+                  onClick={() => navigate('/')}
+                >
+                  Trang chủ
+                </Button>
+                <Button
+                  variant="link"
+                  className="text-gray-400 hover:text-white p-0 justify-start"
+                  onClick={() => navigate('/register')}
+                >
+                  Đăng ký
+                </Button>
+                <Button
+                  variant="link"
+                  className="text-gray-400 hover:text-white p-0 justify-start"
+                  onClick={() => navigate('/login')}
+                >
+                  Đăng nhập
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
-
