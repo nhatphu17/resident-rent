@@ -58,9 +58,17 @@ export default function HomePage() {
     },
   ];
 
+  // Debug geolocation state
   useEffect(() => {
-    fetchRooms();
-  }, [latitude, longitude, maxDistance]); // Refetch when location or filter changes
+    console.log('Geolocation state changed:', { latitude, longitude, error: geoError, loading: geoLoading });
+  }, [latitude, longitude, geoError, geoLoading]);
+
+  useEffect(() => {
+    // Only fetch rooms after geolocation has finished loading (success or error)
+    if (!geoLoading) {
+      fetchRooms();
+    }
+  }, [latitude, longitude, maxDistance, geoLoading]); // Refetch when location or filter changes, but wait for geolocation to finish
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -83,6 +91,8 @@ export default function HomePage() {
 
       const queryString = params.toString();
       const url = `${API_URL}/api/rooms/public${queryString ? `?${queryString}` : ''}`;
+      
+      console.log('Fetching rooms with params:', { latitude, longitude, maxDistance, url });
       
       const response = await axios.get(url);
       const roomsData = response.data;
