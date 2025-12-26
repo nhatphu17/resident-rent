@@ -49,6 +49,16 @@ export class CreateRoomDto {
   @IsOptional()
   province?: string;
 
+  @IsNumber()
+  @Type(() => Number)
+  @IsOptional()
+  latitude?: number;
+
+  @IsNumber()
+  @Type(() => Number)
+  @IsOptional()
+  longitude?: number;
+
   @IsString()
   @IsOptional()
   qrCodeImage?: string;

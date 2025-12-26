@@ -85,6 +85,8 @@ model Room {
   ward          String?  // Xã/Phường
   district      String?  // Quận/Huyện
   province      String?  // Tỉnh/Thành phố
+  latitude      Float?   // Vĩ độ (để tính khoảng cách)
+  longitude     Float?   // Kinh độ (để tính khoảng cách)
   qrCodeImage   String?  @db.Text // URL hoặc base64 của QR code thanh toán
   images        String?  @db.LongText // JSON array của các ảnh phòng (base64 hoặc URL) - LongText supports up to 4GB
   createdAt     DateTime @default(now())

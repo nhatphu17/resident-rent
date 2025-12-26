@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle } from 'lucide-react';
+import { Search, MapPin, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle, Navigation } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { calculateDistance, formatDistance } from '@/utils/distance';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -19,6 +21,8 @@ interface Room {
   ward?: string;
   district?: string;
   province?: string;
+  latitude?: number;
+  longitude?: number;
   images?: string; // JSON array of base64 images
   landlord: {
     id: number;
@@ -26,14 +30,17 @@ interface Room {
     phone: string;
     address?: string;
   };
+  distance?: number; // Distance in km (calculated client-side)
 }
 
 export default function HomePage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortByDistance, setSortByDistance] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Banner slides - Using image banners
@@ -72,19 +79,47 @@ export default function HomePage() {
     }
   };
 
-  const filteredRooms = rooms.filter((room) => {
-    const searchLower = searchTerm.toLowerCase();
-    const fullAddress = [room.ward, room.province, room.landlord.address]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
+  // Calculate distances for rooms
+  const roomsWithDistance = useMemo(() => {
+    if (!latitude || !longitude) return rooms.map(room => ({ ...room, distance: undefined }));
     
-    return (
-      fullAddress.includes(searchLower) ||
-      room.roomNumber.toLowerCase().includes(searchLower) ||
-      (room.description?.toLowerCase().includes(searchLower) || false)
-    );
-  });
+    return rooms.map(room => {
+      if (room.latitude && room.longitude) {
+        const distance = calculateDistance(latitude, longitude, room.latitude, room.longitude);
+        return { ...room, distance };
+      }
+      return { ...room, distance: undefined };
+    });
+  }, [rooms, latitude, longitude]);
+
+  // Filter and sort rooms
+  const filteredRooms = useMemo(() => {
+    let result = roomsWithDistance.filter((room) => {
+      const searchLower = searchTerm.toLowerCase();
+      const fullAddress = [room.ward, room.province, room.landlord.address]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      
+      return (
+        fullAddress.includes(searchLower) ||
+        room.roomNumber.toLowerCase().includes(searchLower) ||
+        (room.description?.toLowerCase().includes(searchLower) || false)
+      );
+    });
+
+    // Sort by distance if enabled
+    if (sortByDistance && latitude && longitude) {
+      result = result.sort((a, b) => {
+        if (a.distance === undefined && b.distance === undefined) return 0;
+        if (a.distance === undefined) return 1;
+        if (b.distance === undefined) return -1;
+        return a.distance - b.distance;
+      });
+    }
+
+    return result;
+  }, [roomsWithDistance, searchTerm, sortByDistance, latitude, longitude]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
@@ -160,8 +195,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Banner Slider */}
-      <section className="relative h-64 md:h-96 overflow-hidden bg-gray-100">
+      {/* Banner Slider - Optimized for mobile */}
+      <section className="relative h-48 md:h-64 lg:h-80 overflow-hidden bg-gray-100">
         {bannerSlides.map((slide, index) => (
           <div
             key={index}
@@ -220,113 +255,112 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Introduction Section */}
-      <section className="py-16 bg-white">
+      {/* Introduction Section - Optimized for mobile */}
+      <section className="py-8 md:py-12 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-6 md:mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
               Trọ Quanh Tôi
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Trọ Quanh Tôi là nền tảng giúp người thuê tìm phòng gần vị trí hiện tại chỉ trong vài giây, 
-              đồng thời giúp chủ trọ tự động hóa toàn bộ việc quản lý phòng, điện nước và thu tiền – 
-              không cần ghi chép, không cần nhắc nhở.
+            <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto px-2">
+              Nền tảng giúp người thuê tìm phòng gần vị trí hiện tại chỉ trong vài giây, 
+              đồng thời giúp chủ trọ tự động hóa toàn bộ việc quản lý phòng, điện nước và thu tiền.
             </p>
           </div>
 
-          {/* Features for Tenants */}
-          <div className="mb-16">
-            <h3 className="text-2xl font-bold text-center mb-8 text-blue-600">
+          {/* Features for Tenants - Compact on mobile */}
+          <div className="mb-8 md:mb-12">
+            <h3 className="text-lg md:text-xl font-bold text-center mb-4 md:mb-6 text-blue-600">
               ✨ Dành cho người thuê
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <Card className="border-blue-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <Map className="w-12 h-12 mx-auto mb-4 text-blue-500" />
-                  <h4 className="font-semibold mb-2">🔍 Tự động hiển thị phòng trọ xung quanh bạn</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Tìm phòng gần vị trí hiện tại chỉ trong vài giây
+                <CardContent className="p-3 md:p-4 text-center">
+                  <Map className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-blue-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">🔍 Tự động hiển thị</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Tìm phòng gần vị trí
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-blue-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <Eye className="w-12 h-12 mx-auto mb-4 text-blue-500" />
-                  <h4 className="font-semibold mb-2">🗺️ Xem vị trí, giá, hình ảnh, tiện ích rõ ràng</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Thông tin chi tiết, minh bạch về phòng trọ
+                <CardContent className="p-3 md:p-4 text-center">
+                  <Eye className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-blue-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">🗺️ Xem chi tiết</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Vị trí, giá, hình ảnh
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-blue-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <Phone className="w-12 h-12 mx-auto mb-4 text-blue-500" />
-                  <h4 className="font-semibold mb-2">📱 Liên hệ chủ trọ nhanh chóng</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Liên hệ trực tiếp với chủ trọ qua số điện thoại
+                <CardContent className="p-3 md:p-4 text-center">
+                  <Phone className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-blue-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">📱 Liên hệ nhanh</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Liên hệ chủ trọ
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-blue-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <DollarSign className="w-12 h-12 mx-auto mb-4 text-blue-500" />
-                  <h4 className="font-semibold mb-2">💡 Minh bạch tiền điện – nước – phí</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Xem rõ ràng các khoản phí cần thanh toán
+                <CardContent className="p-3 md:p-4 text-center">
+                  <DollarSign className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-blue-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">💡 Minh bạch</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Tiền điện nước
                   </p>
                 </CardContent>
               </Card>
             </div>
           </div>
 
-          {/* Features for Landlords */}
+          {/* Features for Landlords - Compact on mobile */}
           <div>
-            <h3 className="text-2xl font-bold text-center mb-8 text-orange-600">
-              🏠 Dành cho chủ trọ / chung cư mini
+            <h3 className="text-lg md:text-xl font-bold text-center mb-4 md:mb-6 text-orange-600">
+              🏠 Dành cho chủ trọ
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
               <Card className="border-orange-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <Home className="w-12 h-12 mx-auto mb-4 text-orange-500" />
-                  <h4 className="font-semibold mb-2">🏠 Quản lý phòng & người thuê tập trung</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Quản lý tất cả phòng và người thuê tại một nơi
+                <CardContent className="p-3 md:p-4 text-center">
+                  <Home className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-orange-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">🏠 Quản lý tập trung</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Phòng & người thuê
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-orange-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <Zap className="w-12 h-12 mx-auto mb-4 text-orange-500" />
-                  <h4 className="font-semibold mb-2">⚡ Tự động chốt điện – nước hàng tháng</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Tự động tính toán và chốt chỉ số điện nước
+                <CardContent className="p-3 md:p-4 text-center">
+                  <Zap className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-orange-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">⚡ Tự động chốt</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Điện nước hàng tháng
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-orange-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-orange-500" />
-                  <h4 className="font-semibold mb-2">🧾 Tự động tạo bill & gửi cho người thuê</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Tự động tạo hóa đơn và gửi cho người thuê
+                <CardContent className="p-3 md:p-4 text-center">
+                  <CheckCircle2 className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-orange-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">🧾 Tự động tạo bill</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Gửi cho người thuê
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-orange-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <Bell className="w-12 h-12 mx-auto mb-4 text-orange-500" />
-                  <h4 className="font-semibold mb-2">🔔 Tự động nhắc thanh toán (Zalo / SMS)</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Tự động gửi thông báo nhắc nhở thanh toán
+                <CardContent className="p-3 md:p-4 text-center">
+                  <Bell className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-orange-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">🔔 Nhắc thanh toán</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Zalo / SMS
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-orange-200 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6 text-center">
-                  <DollarSign className="w-12 h-12 mx-auto mb-4 text-orange-500" />
-                  <h4 className="font-semibold mb-2">💰 Theo dõi trạng thái thanh toán real-time</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Xem trạng thái thanh toán theo thời gian thực
+                <CardContent className="p-3 md:p-4 text-center">
+                  <DollarSign className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 text-orange-500" />
+                  <h4 className="text-xs md:text-sm font-semibold mb-1">💰 Theo dõi real-time</h4>
+                  <p className="text-xs text-muted-foreground hidden md:block">
+                    Trạng thái thanh toán
                   </p>
                 </CardContent>
               </Card>
@@ -335,19 +369,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+      {/* CTA Section - Compact for mobile */}
+      <section className="py-8 md:py-12 bg-gradient-to-r from-blue-500 to-orange-500 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2 md:mb-4">
             Tìm phòng quanh bạn – Quản lý trọ tự động
           </h2>
-          <p className="text-xl mb-2 opacity-90">
-            Không cần chốt điện nước
+          <p className="text-sm md:text-base mb-1 opacity-90">
+            Không cần chốt điện nước • Không cần nhắc thu tiền
           </p>
-          <p className="text-xl mb-2 opacity-90">
-            Không cần nhắc thu tiền
-          </p>
-          <p className="text-xl mb-8 font-semibold">
+          <p className="text-base md:text-lg mb-4 md:mb-6 font-semibold">
             Một app lo tất cả
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -382,18 +413,36 @@ export default function HomePage() {
             Khám phá hàng ngàn phòng trọ chất lượng với giá cả hợp lý
           </p>
 
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo địa chỉ, số phòng..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
+          {/* Search Bar and Location Button */}
+          <div className="max-w-2xl mx-auto space-y-3">
+            <div className="relative flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo địa chỉ, số phòng..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 md:py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm md:text-base"
+                />
+              </div>
+              {latitude && longitude && (
+                <Button
+                  variant={sortByDistance ? "default" : "outline"}
+                  onClick={() => setSortByDistance(!sortByDistance)}
+                  className="px-3 md:px-4"
+                  title="Sắp xếp theo khoảng cách"
+                >
+                  <Navigation className="w-4 h-4 md:w-5 md:h-5" />
+                  <span className="hidden sm:inline ml-1">Gần tôi</span>
+                </Button>
+              )}
             </div>
+            {geoError && (
+              <p className="text-xs text-muted-foreground text-center">
+                Không thể lấy vị trí. Vui lòng cho phép truy cập vị trí để tìm phòng gần bạn.
+              </p>
+            )}
           </div>
         </div>
 
@@ -448,11 +497,26 @@ export default function HomePage() {
                       .filter(Boolean)
                       .join(', ');
                     return fullAddress || room.landlord.address ? (
-                      <div className="flex items-center text-muted-foreground mb-3 text-sm">
-                        <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                        <span className="truncate">{fullAddress || room.landlord.address}</span>
+                      <div className="flex items-center justify-between text-muted-foreground mb-3 text-sm gap-2">
+                        <div className="flex items-center flex-1 min-w-0">
+                          <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                          <span className="truncate">{fullAddress || room.landlord.address}</span>
+                        </div>
+                        {room.distance !== undefined && (
+                          <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0">
+                            Cách bạn {formatDistance(room.distance)}
+                          </span>
+                        )}
                       </div>
-                    ) : null;
+                    ) : (
+                      room.distance !== undefined && (
+                        <div className="mb-3 text-sm">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                            Cách bạn {formatDistance(room.distance)}
+                          </span>
+                        </div>
+                      )
+                    );
                   })()}
 
                   <div className="flex flex-wrap gap-4 mb-4 text-sm">

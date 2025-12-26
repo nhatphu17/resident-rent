@@ -33,6 +33,8 @@ export class RoomsService {
         ward: true,
         district: true,
         province: true,
+        latitude: true,
+        longitude: true,
         qrCodeImage: true,
         images: true,
         landlord: {
@@ -65,6 +67,8 @@ export class RoomsService {
         ward: true,
         district: true,
         province: true,
+        latitude: true,
+        longitude: true,
         qrCodeImage: true,
         images: true,
         landlord: {

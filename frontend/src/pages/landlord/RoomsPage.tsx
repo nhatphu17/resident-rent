@@ -19,6 +19,8 @@ interface Room {
   ward?: string;
   district?: string;
   province?: string;
+  latitude?: number;
+  longitude?: number;
   qrCodeImage?: string;
   images?: string; // JSON array of base64 images
 }
@@ -40,6 +42,8 @@ export default function RoomsPage() {
     ward: '',
     district: '',
     province: '',
+    latitude: '',
+    longitude: '',
     qrCodeImage: '',
     images: '',
   });
@@ -171,6 +175,8 @@ export default function RoomsPage() {
         waterPrice: Number(formData.waterPrice),
         ward: formData.ward || undefined,
         province: formData.province || undefined,
+        latitude: formData.latitude ? Number(formData.latitude) : undefined,
+        longitude: formData.longitude ? Number(formData.longitude) : undefined,
         qrCodeImage: formData.qrCodeImage || undefined,
         images: formData.images || undefined,
       };
@@ -196,6 +202,8 @@ export default function RoomsPage() {
         description: '',
         ward: '',
         province: '',
+        latitude: '',
+        longitude: '',
         qrCodeImage: '',
         images: '',
       });
@@ -219,6 +227,8 @@ export default function RoomsPage() {
       description: room.description || '',
       ward: room.ward || '',
       province: room.province || '',
+      latitude: room.latitude?.toString() || '',
+      longitude: room.longitude?.toString() || '',
       qrCodeImage: room.qrCodeImage || '',
       images: room.images || '',
     });
@@ -255,6 +265,8 @@ export default function RoomsPage() {
         description: '',
         ward: '',
         province: '',
+        latitude: '',
+        longitude: '',
         qrCodeImage: '',
         images: '',
       });
@@ -373,6 +385,32 @@ export default function RoomsPage() {
                     onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                     placeholder="VD: TP. Hồ Chí Minh, Hà Nội..."
                   />
+                </div>
+                <div>
+                  <Label>Vĩ độ (Latitude) - Tùy chọn</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={formData.latitude}
+                    onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                    placeholder="VD: 10.762622"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Để tính khoảng cách. Lấy từ Google Maps
+                  </p>
+                </div>
+                <div>
+                  <Label>Kinh độ (Longitude) - Tùy chọn</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={formData.longitude}
+                    onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                    placeholder="VD: 106.660172"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Để tính khoảng cách. Lấy từ Google Maps
+                  </p>
                 </div>
                 <div className="col-span-2">
                   <Label>Mô tả</Label>
