@@ -41,7 +41,7 @@ export default function HomePage() {
   const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = tất cả, số = km
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
+  const { latitude, longitude, error: geoError, loading: geoLoading, retry: retryGeolocation } = useGeolocation();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Banner slides - Using image banners
@@ -446,9 +446,20 @@ export default function HomePage() {
                 <p className="text-xs text-amber-600 bg-amber-50 px-4 py-2 rounded-lg inline-block">
                   ⚠️ {geoError}
                 </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Bạn vẫn có thể tìm phòng bằng cách nhập địa chỉ vào ô tìm kiếm.
-                </p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center items-center mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={retryGeolocation}
+                    disabled={geoLoading}
+                    className="text-xs"
+                  >
+                    {geoLoading ? 'Đang thử lại...' : '🔄 Thử lại lấy vị trí'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    hoặc tìm phòng bằng cách nhập địa chỉ vào ô tìm kiếm
+                  </p>
+                </div>
               </div>
             )}
           </div>
