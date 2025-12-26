@@ -21,7 +21,11 @@ interface Contract {
 interface Tenant {
   id: number;
   name: string;
-  user: { email: string };
+  phone: string;
+  user: { 
+    email?: string;
+    phone?: string;
+  };
 }
 
 interface Room {
@@ -232,7 +236,7 @@ export default function ContractsPage() {
                     <SelectContent>
                       {tenants.map((tenant) => (
                         <SelectItem key={tenant.id} value={tenant.id.toString()}>
-                          {tenant.name} ({tenant.user.email})
+                          {tenant.name} ({tenant.phone || tenant.user?.phone || tenant.user?.email || 'N/A'})
                         </SelectItem>
                       ))}
                     </SelectContent>

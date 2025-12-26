@@ -24,10 +24,10 @@ export default function LandlordDashboard() {
   const navItems = [
     { path: '/landlord/rooms', label: 'Phòng' },
     { path: '/landlord/tenants', label: 'Người thuê' },
-    { path: '/landlord/contracts', label: 'Hợp đồng' },
     { path: '/landlord/invoices', label: 'Hóa đơn' },
     { path: '/landlord/usage', label: 'Nhập chỉ số' },
     { path: '/landlord/sensors', label: 'Dữ liệu IoT' },
+    { path: '/landlord/contracts', label: 'Hợp đồng' },
   ];
 
   return (
