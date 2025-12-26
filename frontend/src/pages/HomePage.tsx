@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle, Navigation } from 'lucide-react';
+import { Search, MapPin, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { calculateDistance, formatDistance } from '@/utils/distance';
@@ -38,7 +38,7 @@ export default function HomePage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortByDistance, setSortByDistance] = useState(false);
+  const [maxDistance, setMaxDistance] = useState<number | null>(null); // null = tất cả, số = km
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
@@ -96,22 +96,37 @@ export default function HomePage() {
   // Filter and sort rooms
   const filteredRooms = useMemo(() => {
     let result = roomsWithDistance.filter((room) => {
+      // Filter by search term
       const searchLower = searchTerm.toLowerCase();
       const fullAddress = [room.ward, room.province, room.landlord.address]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       
-      return (
+      const matchesSearch = (
         fullAddress.includes(searchLower) ||
         room.roomNumber.toLowerCase().includes(searchLower) ||
         (room.description?.toLowerCase().includes(searchLower) || false)
       );
+
+      if (!matchesSearch) return false;
+
+      // Filter by max distance if set and location is available
+      if (maxDistance !== null && latitude && longitude) {
+        if (room.distance === undefined) {
+          // Nếu phòng không có tọa độ, vẫn hiển thị (không filter)
+          return true;
+        }
+        return room.distance <= maxDistance;
+      }
+
+      return true;
     });
 
-    // Sort by distance if enabled
-    if (sortByDistance && latitude && longitude) {
+    // Auto sort by distance if location is available (mặc định)
+    if (latitude && longitude) {
       result = result.sort((a, b) => {
+        // Phòng có khoảng cách luôn ưu tiên hơn phòng không có
         if (a.distance === undefined && b.distance === undefined) return 0;
         if (a.distance === undefined) return 1;
         if (b.distance === undefined) return -1;
@@ -120,7 +135,7 @@ export default function HomePage() {
     }
 
     return result;
-  }, [roomsWithDistance, searchTerm, sortByDistance, latitude, longitude]);
+  }, [roomsWithDistance, searchTerm, maxDistance, latitude, longitude]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
@@ -428,15 +443,21 @@ export default function HomePage() {
                 />
               </div>
               {latitude && longitude && (
-                <Button
-                  variant={sortByDistance ? "default" : "outline"}
-                  onClick={() => setSortByDistance(!sortByDistance)}
-                  className="px-3 md:px-4"
-                  title="Sắp xếp theo khoảng cách"
+                <select
+                  value={maxDistance === null ? 'all' : maxDistance.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setMaxDistance(value === 'all' ? null : Number(value));
+                  }}
+                  className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-white"
+                  title="Lọc theo khoảng cách"
                 >
-                  <Navigation className="w-4 h-4 md:w-5 md:h-5" />
-                  <span className="hidden sm:inline ml-1">Gần tôi</span>
-                </Button>
+                  <option value="all">📍 Tất cả phòng</option>
+                  <option value="5">📍 Trong 5km</option>
+                  <option value="10">📍 Trong 10km</option>
+                  <option value="20">📍 Trong 20km</option>
+                  <option value="50">📍 Trong 50km</option>
+                </select>
               )}
             </div>
             {geoError && (
@@ -447,12 +468,35 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Info message when location is available */}
+        {latitude && longitude && (
+          <div className="mb-4 text-center">
+            <p className="text-sm text-blue-600 bg-blue-50 px-4 py-2 rounded-lg inline-block">
+              📍 Danh sách phòng đang được sắp xếp theo khoảng cách gần bạn nhất
+              {maxDistance !== null && ` (trong vòng ${maxDistance}km)`}
+            </p>
+          </div>
+        )}
+
         {/* Rooms Grid */}
         {filteredRooms.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-lg text-muted-foreground">
-              {searchTerm ? 'Không tìm thấy phòng nào' : 'Hiện chưa có phòng trống'}
+              {searchTerm 
+                ? 'Không tìm thấy phòng nào phù hợp với từ khóa tìm kiếm' 
+                : maxDistance !== null && latitude && longitude
+                ? `Không có phòng nào trong vòng ${maxDistance}km từ vị trí của bạn`
+                : 'Hiện chưa có phòng trống'}
             </p>
+            {maxDistance !== null && latitude && longitude && (
+              <Button
+                variant="outline"
+                onClick={() => setMaxDistance(null)}
+                className="mt-4"
+              >
+                Xem tất cả phòng
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
