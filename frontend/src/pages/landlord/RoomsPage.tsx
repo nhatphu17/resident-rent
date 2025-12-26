@@ -75,26 +75,80 @@ export default function RoomsPage() {
     }
   };
 
-  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1080, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedBase64);
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const readers: FileReader[] = [];
       const newPreviews: string[] = [];
-      let loadedCount = 0;
-
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newPreviews.push(reader.result as string);
-          loadedCount++;
-          if (loadedCount === files.length) {
-            setImagePreviews(newPreviews);
-            setFormData({ ...formData, images: JSON.stringify(newPreviews) });
+      
+      try {
+        // Process all images with compression
+        const compressionPromises = Array.from(files).map((file) => {
+          // Only compress if file is larger than 500KB
+          if (file.size > 500 * 1024) {
+            return compressImage(file, 1920, 1080, 0.8);
+          } else {
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
           }
-        };
-        reader.readAsDataURL(file);
-        readers.push(reader);
-      });
+        });
+
+        const compressedImages = await Promise.all(compressionPromises);
+        newPreviews.push(...compressedImages);
+        
+        setImagePreviews(newPreviews);
+        setFormData({ ...formData, images: JSON.stringify(newPreviews) });
+      } catch (error) {
+        console.error('Error processing images:', error);
+        setError('Lỗi khi xử lý ảnh. Vui lòng thử lại với ảnh nhỏ hơn.');
+      }
     }
   };
 
