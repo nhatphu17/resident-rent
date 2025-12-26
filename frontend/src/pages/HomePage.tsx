@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Bed, Bath, Square, Phone, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Bed, Bath, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, Map, Eye, Zap, Droplets, Home, Bell, DollarSign, CheckCircle2, Mail, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
@@ -34,6 +34,36 @@ export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Banner slides
+  const bannerSlides = [
+    {
+      title: 'Tìm phòng trọ quanh bạn',
+      subtitle: 'Chỉ trong vài giây',
+      description: 'Tự động hiển thị phòng trọ gần vị trí hiện tại',
+      bgColor: 'from-blue-500 to-cyan-500',
+    },
+    {
+      title: 'Quản lý trọ tự động',
+      subtitle: 'Không cần ghi chép, không cần nhắc nhở',
+      description: 'Tự động hóa toàn bộ việc quản lý phòng, điện nước và thu tiền',
+      bgColor: 'from-orange-500 to-red-500',
+    },
+    {
+      title: 'Minh bạch tiền điện nước',
+      subtitle: 'Theo dõi real-time',
+      description: 'Xem rõ ràng tiền điện, nước, phí và trạng thái thanh toán',
+      bgColor: 'from-green-500 to-emerald-500',
+    },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetchRooms();
