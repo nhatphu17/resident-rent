@@ -32,6 +32,7 @@ export default function TenantInvoicesPage() {
   const fetchInvoices = async () => {
     try {
       const response = await api.get('/invoices');
+      console.log('Invoices response:', response.data); // Debug log
       setInvoices(response.data);
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -107,16 +108,29 @@ export default function TenantInvoicesPage() {
                 <p className="text-sm text-gray-600 mt-4">
                   Hạn thanh toán: {new Date(invoice.dueDate).toLocaleDateString('vi-VN')}
                 </p>
-                {invoice.room.qrCodeImage && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-gray-700 mb-2">QR Code thanh toán:</p>
+                {invoice.room?.qrCodeImage ? (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm font-medium text-gray-700 mb-3 text-center">QR Code thanh toán:</p>
                     <div className="flex justify-center">
                       <img 
                         src={invoice.room.qrCodeImage} 
                         alt="QR Code thanh toán" 
-                        className="max-w-xs w-full h-auto border border-gray-300 rounded"
+                        className="max-w-xs w-full h-auto border-2 border-gray-300 rounded-lg shadow-sm"
+                        onError={(e) => {
+                          console.error('Error loading QR code image:', invoice.room?.qrCodeImage);
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     </div>
+                    <p className="text-xs text-gray-500 mt-2 text-center italic">
+                      Quét mã QR để thanh toán hóa đơn qua ví điện tử
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-xs text-yellow-700 text-center">
+                      ⚠️ Chưa có QR code thanh toán. Vui lòng liên hệ chủ trọ để được hỗ trợ.
+                    </p>
                   </div>
                 )}
                 <Button

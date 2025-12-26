@@ -1,27 +1,49 @@
-# Hướng dẫn Migration Database
+# Hướng dẫn chạy Migration để thêm trường images
 
 ## Vấn đề
-Đã thêm field `createdByLandlordId` vào model `Tenant` để track landlord nào đã tạo tenant nào. Điều này giúp hiển thị người thuê ngay sau khi tạo, kể cả khi chưa có hợp đồng.
+Sau khi thêm trường `images` vào schema Prisma, cần chạy migration để cập nhật database và Prisma Client.
 
-## Cách chạy Migration
+## Cách khắc phục
 
-### Bước 1: Tạo migration
+### Bước 1: Chạy Migration
 ```bash
 cd backend
-npx prisma migrate dev --name add_created_by_landlord_to_tenant
+npx prisma migrate dev --name add_room_images
+```
+
+Hoặc nếu dùng npm:
+```bash
+cd backend
+npm run prisma:migrate dev --name add_room_images
 ```
 
 ### Bước 2: Generate Prisma Client
 ```bash
+cd backend
 npx prisma generate
 ```
 
-### Bước 3: (Tùy chọn) Nếu có dữ liệu cũ
-Nếu bạn đã có dữ liệu trong database, field `createdByLandlordId` sẽ là `null` cho các tenant cũ. Điều này không ảnh hưởng đến chức năng, nhưng các tenant cũ sẽ chỉ xuất hiện sau khi có hợp đồng.
+Hoặc:
+```bash
+cd backend
+npm run prisma:generate
+```
+
+### Bước 3: Uncomment images trong code
+Sau khi migration thành công, mở file `backend/src/rooms/rooms.service.ts` và uncomment dòng:
+```typescript
+images: true, // Uncomment after running migration
+```
+
+Thành:
+```typescript
+images: true,
+```
+
+### Bước 4: Restart Backend Server
+Sau khi hoàn tất, restart backend server để áp dụng thay đổi.
 
 ## Lưu ý
-- Field `createdByLandlordId` là optional (nullable), nên migration sẽ không ảnh hưởng đến dữ liệu hiện có
-- Sau khi migration, các tenant mới được tạo sẽ tự động có `createdByLandlordId` được set
-- Các tenant cũ vẫn hoạt động bình thường, chỉ là sẽ không xuất hiện trong danh sách cho đến khi có hợp đồng
-
-
+- Migration sẽ tạo migration file mới trong `backend/prisma/migrations/`
+- Nếu có dữ liệu trong database, migration sẽ thêm cột mới với giá trị `NULL`
+- Đảm bảo đã backup database trước khi chạy migration (nếu cần)
