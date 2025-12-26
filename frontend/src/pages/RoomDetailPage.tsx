@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Square, ArrowLeft, QrCode, Copy, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
+import { getImageUrl } from '@/lib/utils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -173,7 +174,7 @@ export default function RoomDetailPage() {
             {roomImages.length > 0 ? (
               <>
                 <img
-                  src={roomImages[currentImageIndex]}
+                  src={getImageUrl(roomImages[currentImageIndex])}
                   alt={`Phòng ${room.roomNumber} - Ảnh ${currentImageIndex + 1}`}
                   className="w-full h-full object-cover"
                 />
@@ -355,7 +356,7 @@ export default function RoomDetailPage() {
                         <div className="flex flex-col items-center pt-4 border-t">
                           <div className="bg-white p-4 rounded-lg border-2 border-primary/20">
                             <img
-                              src={room.qrCodeImage}
+                              src={getImageUrl(room.qrCodeImage)}
                               alt="QR Code thanh toán"
                               className="max-w-[200px] w-full h-auto"
                             />

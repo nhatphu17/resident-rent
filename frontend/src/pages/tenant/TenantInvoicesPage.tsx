@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getImageUrl } from '@/lib/utils';
 
 interface Invoice {
   id: number;
@@ -113,7 +114,7 @@ export default function TenantInvoicesPage() {
                     <p className="text-sm font-medium text-gray-700 mb-3 text-center">QR Code thanh toán:</p>
                     <div className="flex justify-center">
                       <img 
-                        src={invoice.room.qrCodeImage} 
+                        src={getImageUrl(invoice.room.qrCodeImage)} 
                         alt="QR Code thanh toán" 
                         className="max-w-xs w-full h-auto border-2 border-gray-300 rounded-lg shadow-sm"
                         onError={(e) => {

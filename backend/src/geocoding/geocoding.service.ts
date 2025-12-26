@@ -4,6 +4,8 @@ import { Injectable, Logger } from '@nestjs/common';
 export class GeocodingService {
   private readonly logger = new Logger(GeocodingService.name);
   private readonly nominatimUrl = 'https://nominatim.openstreetmap.org/search';
+  private lastRequestTime: number = 0;
+  private readonly minDelayBetweenRequests = 1000; // 1 second delay between requests (Nominatim requirement)
 
   /**
    * Geocode an address to get latitude and longitude
@@ -16,6 +18,15 @@ export class GeocodingService {
     }
 
     try {
+      // Respect rate limiting: wait at least 1 second between requests
+      const now = Date.now();
+      const timeSinceLastRequest = now - this.lastRequestTime;
+      if (timeSinceLastRequest < this.minDelayBetweenRequests) {
+        const delay = this.minDelayBetweenRequests - timeSinceLastRequest;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      this.lastRequestTime = Date.now();
+
       // Add "Vietnam" to improve accuracy for Vietnamese addresses
       const searchQuery = `${address}, Vietnam`;
       
@@ -26,15 +37,22 @@ export class GeocodingService {
       url.searchParams.set('limit', '1');
       url.searchParams.set('addressdetails', '1');
 
-      // Add User-Agent header (required by Nominatim)
+      // Add proper User-Agent header (required by Nominatim, must identify the application)
+      // Using a more descriptive User-Agent to avoid 403 errors
       const response = await fetch(url.toString(), {
         headers: {
-          'User-Agent': 'ResidentRentApp/1.0 (contact@example.com)', // Replace with your app name/email
+          'User-Agent': 'ResidentRentApp/1.0 (https://github.com/your-repo; contact@yourdomain.com)',
+          'Accept': 'application/json',
+          'Accept-Language': 'vi,en-US;q=0.9',
         },
       });
 
       if (!response.ok) {
-        this.logger.warn(`Geocoding API returned status ${response.status}`);
+        if (response.status === 403) {
+          this.logger.error(`Geocoding API returned 403 Forbidden. This may be due to rate limiting or User-Agent issues.`);
+        } else {
+          this.logger.warn(`Geocoding API returned status ${response.status}`);
+        }
         return null;
       }
 

@@ -6,6 +6,7 @@ import { Search, MapPin, Square, Phone, ArrowRight, ChevronLeft, ChevronRight, M
 import { useAuth } from '@/contexts/AuthContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { calculateDistance, formatDistance } from '@/utils/distance';
+import { getImageUrl } from '@/lib/utils';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -475,7 +476,7 @@ export default function HomePage() {
                 <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary/10 overflow-hidden">
                   {firstImage ? (
                     <img
-                      src={firstImage}
+                      src={getImageUrl(firstImage)}
                       alt={`Phòng ${room.roomNumber}`}
                       className="w-full h-full object-cover"
                     />
